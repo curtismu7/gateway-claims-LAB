@@ -1,0 +1,16 @@
+{
+  "demos": [
+    {
+      "id": "gateway-claims-lab",
+      "name": "Gateway Claims LAB",
+      "kind": "Demo",
+      "description": "What the Privilege gateway versions added, in mock only: a nested-claim gate (client_id + act.sub via RequiredClaims, including the act-as-text trap), scope gates, AgentCore governance and posture (shape only, values invented), two H2 2026 release tabs (on-behalf-of RFC 8693 exchange, AgentCore gateway governance console) and the readings of gateway v1.261029 and v1.261030 with the 2026-11-02 features not yet measured. Ping release claims, UNVERIFIED on our tenant. Mock only.",
+      "url": "http://localhost:5150",
+      "healthPath": "/api/health",
+      "composeFile": "gateway-claims-LAB/docker-compose.yml",
+      "composeOverlays": [],
+      "catalogId": "D99",
+      "notes": "Host-run: ./scripts/run.sh (port 5150). Mock only: no tenant, no credentials; the header Live button is refused with a message. Docker: HOST_PORT=5150 docker compose up --build -d (published on 127.0.0.1 only). Brand it with customer.config.json. Catalog id D99 (confirmed by the owner 2026-10-28). Nested-match-is-new-in-v1.261024 is UNVERIFIED (inferred from binary symbols)."
+    }
+  ]
+}

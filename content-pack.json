@@ -1,0 +1,287 @@
+{
+  "schema": "demo-content-pack/1",
+  "id": "gateway-claims-lab",
+  "title": "Gateway Claims LAB",
+  "version": "0.1.0",
+  "demo": {
+    "id": "gateway-claims-lab",
+    "name": "Gateway Claims LAB",
+    "catalog": "D99",
+    "baseUrl": "http://localhost:5150",
+    "doctor": "/api/health",
+    "tags": [
+      "mcp",
+      "agent",
+      "claims",
+      "privilege",
+      "mock-only",
+      "token-exchange",
+      "agentcore"
+    ]
+  },
+  "glossary": [
+    {
+      "id": "act-claim",
+      "term": "act claim (actor)",
+      "definition": "A token claim naming the party acting on behalf of the subject (RFC 8693). In this lab it must be an OBJECT with a sub, such as {\"sub\": \"orders-agent\"}. The text \"{}\" is not an object and act.sub then does not exist.",
+      "aliases": [
+        "act.sub",
+        "RFC 8693"
+      ]
+    },
+    {
+      "id": "required-claims",
+      "term": "RequiredClaims",
+      "definition": "A mock Privilege policy rule shape: a list of claim paths and the values they must equal. All must match or the call is denied.",
+      "aliases": [
+        "required claims"
+      ]
+    },
+    {
+      "id": "token-exchange",
+      "term": "Token exchange (on-behalf-of)",
+      "definition": "Ping release claim, UNVERIFIED on our tenant: the gateway swaps the caller's verified token (RFC 8693) for one minted for the downstream MCP server, so the backend validates a token issued to it instead of trusting a shared service account. In this lab it is the lab's own model, with a keyed-hash stand-in for a signature.",
+      "aliases": [
+        "RFC 8693",
+        "OBO",
+        "on-behalf-of"
+      ]
+    },
+    {
+      "id": "act-chain",
+      "term": "act claim chain",
+      "definition": "Ping release claim, UNVERIFIED on our tenant: the act claim preserves who the original caller was. When the caller token already carried an act, the lab nests it beneath the new one (one level per hop, capped at three actors: a lab-invented cap).",
+      "aliases": [
+        "delegation chain"
+      ]
+    },
+    {
+      "id": "gateway-scorecard",
+      "term": "Gateway scorecard (twelve checks)",
+      "definition": "Ping release claim, UNVERIFIED on our tenant: the console schema names a twelve-check compliance verdict per AgentCore gateway with a green-count score. The lab computes a score from the state of one modelled gateway; what makes each check green is the lab's reading.",
+      "aliases": [
+        "GatewayScorecardJSON"
+      ]
+    },
+    {
+      "id": "unmeasured-release",
+      "term": "Not yet measured (2026-11-02 release)",
+      "definition": "Ping release claim, UNVERIFIED on our tenant: features named for the 2026-11-02 release that we have not seen on our tenant. This lab lists each with our reading of its name and what a test would need; nothing is verified.",
+      "aliases": [
+        "UNVERIFIED",
+        "entitlement-aware discovery",
+        "aggregate cap",
+        "OBO redeem",
+        "scope layers",
+        "hold"
+      ]
+    },
+    {
+      "id": "flattened-claims",
+      "term": "Flattened claims",
+      "definition": "A token turned into dotted paths such as act.sub, so a rule can address a nested claim. That nested matching is new in gateway v1.261024 is an INFERENCE from binary symbols: UNVERIFIED.",
+      "aliases": [
+        "dotted path",
+        "FlatClaims"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "rfc8693",
+      "title": "RFC 8693: OAuth 2.0 Token Exchange",
+      "url": "https://www.rfc-editor.org/rfc/rfc8693",
+      "kind": "standard",
+      "use": "Defines the act (actor) claim.",
+      "status": "not-read",
+      "checked": "2026-10-27"
+    }
+  ],
+  "cards": [
+    {
+      "id": "try-allowed",
+      "label": "Scenario 1: Allowed: act.sub matches",
+      "description": "client_id and act.sub both equal the registered agent, so the rule passes.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-allowed"
+      },
+      "terms": [
+        "required-claims",
+        "flattened-claims"
+      ],
+      "story": "S01"
+    },
+    {
+      "id": "try-wrong-act-sub",
+      "label": "Scenario 2: Denied: act.sub is a different agent",
+      "description": "The token is valid and signed, but it acts for another agent. The nested claim decides, not the signature.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-wrong-act-sub"
+      },
+      "terms": [
+        "act-claim"
+      ],
+      "story": "S02"
+    },
+    {
+      "id": "try-no-act",
+      "label": "Scenario 3: Denied: no act claim at all",
+      "description": "Without act there is no act.sub to match. A token that proves only a client is not enough for this rule.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-no-act"
+      },
+      "terms": [
+        "act-claim"
+      ],
+      "story": "S03"
+    },
+    {
+      "id": "try-act-text",
+      "label": "Scenario 4: Denied: act emitted as the text \"{}\"",
+      "description": "The real trap: the PingFederate mapping produced the text \"{}\" instead of an object, so act.sub does not exist. Fix the mapping expression, not the rule.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-act-text"
+      },
+      "terms": [
+        "act-claim",
+        "flattened-claims"
+      ],
+      "story": "S04"
+    },
+    {
+      "id": "try-wrong-client",
+      "label": "Scenario 5: Denied: wrong client_id",
+      "description": "act.sub is right but client_id names another client. Both required claims must match.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-wrong-client"
+      },
+      "terms": [
+        "required-claims"
+      ],
+      "story": "S05"
+    },
+    {
+      "id": "concept-posture",
+      "label": "AgentCore gateway posture (shape only)",
+      "description": "Mock gateway, policy-engine and account posture fields. Shape only, values invented, UNVERIFIED against the real product.",
+      "group": "concept",
+      "action": {
+        "type": "route",
+        "href": "/#posture"
+      }
+    },
+    {
+      "id": "concept-latest",
+      "label": "Gateway v1.261029 and v1.261030: what changed, and what we have not measured",
+      "description": "Lab readings, UNVERIFIED: nine changes read from the gateway binaries (never run), the registry facts, and the five 2026-11-02 release features we have not measured (Entitlement-aware discovery, Aggregate cap, OBO redeem, Scope layers, Hold), each with what a test would need.",
+      "group": "concept",
+      "action": {
+        "type": "route",
+        "href": "/#latest"
+      },
+      "terms": [
+        "unmeasured-release"
+      ]
+    },
+    {
+      "id": "concept-obo",
+      "label": "On-behalf-of (RFC 8693): the backend gets its own token",
+      "description": "Ping release claim, UNVERIFIED on our tenant. Thirteen scenarios: the exchanged token (aud is the backend, act names the caller), a chain, and every check that refuses. Each row says whether it is a deck claim, a swagger name, a lab reading or lab-invented.",
+      "group": "concept",
+      "action": {
+        "type": "route",
+        "href": "/#obo"
+      },
+      "terms": [
+        "token-exchange",
+        "act-chain"
+      ]
+    },
+    {
+      "id": "why-obo",
+      "label": "Why it matters: on-behalf-of (Ping claims, slide 48)",
+      "description": "Per Ping's deck (slide 48), UNVERIFIED on our tenant. Challenge: A tool name and arguments cannot say what was asked for, whether the agent was ever meant to do it, or whether it normally behaves this way. Policy built on the request alone cannot tell misuse from an agent doing its job. Technical value: Three separable signals: deterministic intent patterns and purpose declarations refuse hard; learned behaviour baselines drive alerts and approval. On-behalf-of gives the backend a token issued to it, with the original caller named in act. Business value: The enforceable declaration \"this agent exists to reconcile invoices\" unblocks unattended agents in processes that could not otherwise approve them.",
+      "group": "concept",
+      "action": {
+        "type": "route",
+        "href": "/#obo"
+      },
+      "terms": [
+        "token-exchange"
+      ]
+    },
+    {
+      "id": "concept-console",
+      "label": "AgentCore gateway governance: change one gateway and watch the scorecard",
+      "description": "Ping release claim, UNVERIFIED on our tenant. Disable a tool target, switch the WAF failure mode, close a bypass route, pin an endpoint, end a session, and flip log-only to enforcing by typing the gateway name. The scorecard is computed from the state; the values are invented.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#console"
+      },
+      "terms": [
+        "gateway-scorecard"
+      ]
+    },
+    {
+      "id": "why-console",
+      "label": "Why it matters: AgentCore gateway governance (Ping claims, slide 45)",
+      "description": "Per Ping's deck (slide 45), UNVERIFIED on our tenant. Challenge: Agents created in cloud consoles sit outside identity processes: nobody inventoried them and nobody knows what they reach. Each over-privileged agent is a silent breach path that no current review covers. Technical value: Cross-cloud inventory, permission review, 46-finding risk scores and one console to fix or delete. Business value: Cuts agent-audit effort sharply and closes exfiltration paths before they are exploited.",
+      "group": "concept",
+      "action": {
+        "type": "route",
+        "href": "/#console"
+      },
+      "terms": [
+        "gateway-scorecard"
+      ]
+    },
+    {
+      "id": "ref-doctor",
+      "label": "Doctor and health",
+      "description": "Preflight checks and the demo-health/1 endpoint.",
+      "group": "setup",
+      "action": {
+        "type": "route",
+        "href": "/api/health"
+      }
+    }
+  ],
+  "stories": [
+    {
+      "id": "S01",
+      "title": "Allowed: act.sub matches",
+      "say": "client_id and act.sub both equal the registered agent, so the rule passes."
+    },
+    {
+      "id": "S02",
+      "title": "Denied: act.sub is a different agent",
+      "say": "The token is valid and signed, but it acts for another agent. The nested claim decides, not the signature."
+    },
+    {
+      "id": "S03",
+      "title": "Denied: no act claim at all",
+      "say": "Without act there is no act.sub to match. A token that proves only a client is not enough for this rule."
+    },
+    {
+      "id": "S04",
+      "title": "Denied: act emitted as the text \"{}\"",
+      "say": "The real trap: the PingFederate mapping produced the text \"{}\" instead of an object, so act.sub does not exist. Fix the mapping expression, not the rule."
+    },
+    {
+      "id": "S05",
+      "title": "Denied: wrong client_id",
+      "say": "act.sub is right but client_id names another client. Both required claims must match."
+    }
+  ]
+}

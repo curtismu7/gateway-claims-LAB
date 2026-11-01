@@ -1,0 +1,171 @@
+{
+  "schema": "diagram-studio/1",
+  "id": "scope-gate",
+  "title": "Scope gates: PingFederate token to a Cedar rule and RequiredClaims tiers",
+  "lede": "A mock PingFederate token carries scopes. The P1 Privilege Agent App checks them twice: RequiredClaims opens a tier of tools, and a Cedar rule can still forbid one tool. Mock only; values invented.",
+  "groups": {
+    "actor": {
+      "label": "Actors",
+      "color": "dark"
+    },
+    "idp": {
+      "label": "Identity provider (mock)",
+      "color": "blue"
+    },
+    "gateway": {
+      "label": "P1 Privilege Agent App",
+      "color": "red"
+    },
+    "resource": {
+      "label": "Resources",
+      "color": "grey"
+    }
+  },
+  "nodes": [
+    {
+      "id": "agent",
+      "label": "Agent",
+      "group": "actor",
+      "x": 0,
+      "y": 190
+    },
+    {
+      "id": "pf",
+      "label": "PingFederate (mock)",
+      "group": "idp",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "app",
+      "label": "P1 Privilege Agent App",
+      "group": "gateway",
+      "x": 300,
+      "y": 330
+    },
+    {
+      "id": "tier",
+      "label": "RequiredClaims tiers",
+      "group": "gateway",
+      "x": -160,
+      "y": 540
+    },
+    {
+      "id": "cedar",
+      "label": "Cedar scope rule (State Active)",
+      "group": "gateway",
+      "x": 300,
+      "y": 500
+    },
+    {
+      "id": "mcp",
+      "label": "MCP server",
+      "group": "resource",
+      "x": 780,
+      "y": 330
+    }
+  ],
+  "edges": [
+    {
+      "source": "agent",
+      "target": "pf",
+      "label": "client_credentials + scope + resource"
+    },
+    {
+      "source": "pf",
+      "target": "agent",
+      "label": "token with scope, sub, act",
+      "dashed": true
+    },
+    {
+      "source": "agent",
+      "target": "app",
+      "label": "Bearer token"
+    },
+    {
+      "source": "app",
+      "target": "tier",
+      "label": "scope split per value"
+    },
+    {
+      "source": "tier",
+      "target": "app",
+      "label": "tier: 9 / 3 tools, or 403",
+      "dashed": true
+    },
+    {
+      "source": "app",
+      "target": "cedar",
+      "label": "tools/call"
+    },
+    {
+      "source": "cedar",
+      "target": "app",
+      "label": "allow, or forbid (-32600)",
+      "dashed": true
+    },
+    {
+      "source": "app",
+      "target": "mcp",
+      "label": "allowed calls only"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Ask with resource",
+      "what": "The agent sends the agent app URL as resource. Without it a different token manager answers and the gateway cannot find the token (401).",
+      "edges": [
+        0
+      ]
+    },
+    {
+      "title": "Token carries scopes",
+      "what": "The agent token manager returns sub, act and the requested scopes.",
+      "edges": [
+        1
+      ]
+    },
+    {
+      "title": "Agent calls the app",
+      "what": "The token is presented as a bearer to the P1 Privilege Agent App.",
+      "edges": [
+        2
+      ]
+    },
+    {
+      "title": "Scopes are split",
+      "what": "RequiredClaims matches each scope value, not the whole string: opensearch:read matches 'openid opensearch:read'.",
+      "edges": [
+        3
+      ]
+    },
+    {
+      "title": "Tier decides the tool list",
+      "what": "The admin scope lists nine tools, the read scope three, neither is 403.",
+      "edges": [
+        4
+      ]
+    },
+    {
+      "title": "A tool call reaches Cedar",
+      "what": "A call to SearchIndexTool is checked by the Cedar rule.",
+      "edges": [
+        5
+      ]
+    },
+    {
+      "title": "Forbid unless scope",
+      "what": "No opensearch:search scope means JSON-RPC 400 -32600. A policy whose State is not Active only logs a shadow delta and allows.",
+      "edges": [
+        6
+      ]
+    },
+    {
+      "title": "Allowed calls go through",
+      "what": "Only allowed calls reach the MCP server.",
+      "edges": [
+        7
+      ]
+    }
+  ]
+}

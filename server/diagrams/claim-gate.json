@@ -1,0 +1,139 @@
+{
+  "schema": "diagram-studio/1",
+  "id": "claim-gate",
+  "title": "Nested-claim gate: agent token to P1 Privilege Agent App",
+  "lede": "A mock PingFederate-style token reaches the P1 Privilege Agent App; the rule checks client_id and act.sub before the MCP server is called. Mock only. UNVERIFIED: that nested matching is new in gateway v1.261024.",
+  "groups": {
+    "actor": {
+      "label": "Actors",
+      "color": "dark"
+    },
+    "idp": {
+      "label": "Identity provider (mock)",
+      "color": "blue"
+    },
+    "gateway": {
+      "label": "P1 Privilege Agent App",
+      "color": "red"
+    },
+    "resource": {
+      "label": "Resources",
+      "color": "grey"
+    }
+  },
+  "nodes": [
+    {
+      "id": "agent",
+      "label": "Agent",
+      "group": "actor",
+      "x": 0,
+      "y": 190
+    },
+    {
+      "id": "pf",
+      "label": "PingFederate (mock)",
+      "group": "idp",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "app",
+      "label": "P1 Privilege Agent App",
+      "group": "gateway",
+      "x": 300,
+      "y": 330
+    },
+    {
+      "id": "rule",
+      "label": "Rule: RequiredClaims",
+      "group": "gateway",
+      "x": 0,
+      "y": 500
+    },
+    {
+      "id": "mcp",
+      "label": "MCP server",
+      "group": "resource",
+      "x": 300,
+      "y": 560
+    }
+  ],
+  "edges": [
+    {
+      "source": "agent",
+      "target": "pf",
+      "label": "client_credentials"
+    },
+    {
+      "source": "pf",
+      "target": "agent",
+      "label": "token with act.sub",
+      "dashed": true
+    },
+    {
+      "source": "agent",
+      "target": "app",
+      "label": "Bearer token"
+    },
+    {
+      "source": "app",
+      "target": "rule",
+      "label": "flatten claims"
+    },
+    {
+      "source": "rule",
+      "target": "app",
+      "label": "allow / deny",
+      "dashed": true
+    },
+    {
+      "source": "app",
+      "target": "mcp",
+      "label": "tools/call (allow only)"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Agent asks for a token",
+      "what": "The agent authenticates to the mock identity provider as itself.",
+      "edges": [
+        0
+      ]
+    },
+    {
+      "title": "Token carries act.sub",
+      "what": "The mapping puts the agent id in act as an OBJECT, {\"sub\": \"{{castAgentId}}\"}. The text \"{}\" would break the gate.",
+      "edges": [
+        1
+      ]
+    },
+    {
+      "title": "Agent calls the app",
+      "what": "The agent presents the token to the P1 Privilege Agent App.",
+      "edges": [
+        2
+      ]
+    },
+    {
+      "title": "Claims are flattened",
+      "what": "The token becomes dotted paths such as act.sub and client_id.",
+      "edges": [
+        3
+      ]
+    },
+    {
+      "title": "Rule decides",
+      "what": "RequiredClaims client_id and act.sub must equal the registered agent. Anything else is denied.",
+      "edges": [
+        4
+      ]
+    },
+    {
+      "title": "Allowed calls go through",
+      "what": "Only an allow reaches the MCP server.",
+      "edges": [
+        5
+      ]
+    }
+  ]
+}
