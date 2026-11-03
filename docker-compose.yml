@@ -12,6 +12,7 @@ services:
       PORT: "5150"
       GCLAB_BIND: 0.0.0.0
       GCLAB_MODE: mock
+      LAB_ALLOWED_HOSTS: ${LAB_ALLOWED_HOSTS:-}
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
