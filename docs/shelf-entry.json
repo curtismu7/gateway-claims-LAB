@@ -12,5 +12,9 @@
       "catalogId": "D99",
       "notes": "Host-run: ./scripts/run.sh (port 5150). Mock only: no tenant, no credentials; the header Live button is refused with a message. Docker: HOST_PORT=5150 docker compose up --build -d (published on 127.0.0.1 only). Brand it with customer.config.json. Catalog id D99 (confirmed by the owner 2026-10-28). Nested-match-is-new-in-v1.261024 is UNVERIFIED (inferred from binary symbols)."
     }
+  ],
+  "pingProducts": [
+    "pinggateway",
+    "pingfederate"
   ]
 }
