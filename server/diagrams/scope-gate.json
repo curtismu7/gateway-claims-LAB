@@ -69,29 +69,34 @@
     {
       "source": "agent",
       "target": "pf",
-      "label": "client_credentials + scope + resource"
+      "label": "client_credentials + scope + resource",
+      "color": "blue"
     },
     {
       "source": "pf",
       "target": "agent",
       "label": "token with scope, sub, act",
-      "dashed": true
+      "dashed": true,
+      "color": "blue"
     },
     {
       "source": "agent",
       "target": "app",
-      "label": "Bearer token"
+      "label": "Bearer token",
+      "color": "green"
     },
     {
       "source": "app",
       "target": "tier",
-      "label": "scope split per value"
+      "label": "scope split per value",
+      "color": "blue"
     },
     {
       "source": "tier",
       "target": "app",
       "label": "tier: 9 / 3 tools, or 403",
-      "dashed": true
+      "dashed": true,
+      "color": "blue"
     },
     {
       "source": "app",
@@ -102,7 +107,8 @@
       "source": "cedar",
       "target": "app",
       "label": "allow, or forbid (-32600)",
-      "dashed": true
+      "dashed": true,
+      "color": "blue"
     },
     {
       "source": "app",

@@ -72,7 +72,7 @@ function Canvas({ pattern, positions, onMove, stepper }) {
     return {
       id: `e${i}`, source: s.from, target: s.to, sourceHandle: `s-${a}`, targetHandle: `t-${b}`, type: "label",
       animated: now, data: { text: `${i + 1}. ${s.label}`, dy: offs[i], now, dim: stepper.step >= 0 && !seen },
-      className: `pat-edge${now ? " pat-edge--now" : ""}${stepper.step >= 0 && !seen ? " pat-edge--dim" : ""}`,
+      className: `pat-edge${now ? " pat-edge--now" : ""}${stepper.step >= 0 && !seen ? " pat-edge--dim" : ""}${s.color ? ` edge-${s.color}` : ""}`,
       markerEnd: { type: MarkerType.ArrowClosed },
     };
   });

@@ -68,23 +68,27 @@
       "source": "pf",
       "target": "agent",
       "label": "token with act.sub",
-      "dashed": true
+      "dashed": true,
+      "color": "green"
     },
     {
       "source": "agent",
       "target": "app",
-      "label": "Bearer token"
+      "label": "Bearer token",
+      "color": "green"
     },
     {
       "source": "app",
       "target": "rule",
-      "label": "flatten claims"
+      "label": "flatten claims",
+      "color": "blue"
     },
     {
       "source": "rule",
       "target": "app",
       "label": "allow / deny",
-      "dashed": true
+      "dashed": true,
+      "color": "blue"
     },
     {
       "source": "app",
