@@ -77,7 +77,7 @@ If the port is taken:
 4. Do not use 8080, 5173, 3000, 4000, 4400, 4510, 4600-4601, 18080, 19080 or 19090.
 ```
 
-Other variables: `VITE_PORT` (Vite dev server, default 5151, `npm run dev -w web`), `HOST_PORT` (Docker host port, default 5150), `GCLAB_BIND` (the container sets it to `0.0.0.0` inside; the host binds loopback only). Keep all of them inside 5150-5199.
+Other variables: `VITE_PORT` (Vite dev server, default 5151, `npm run dev -w web`), `HOST_PORT` (Docker host port, default 5150), `GCLAB_BIND` (the container sets it to `0.0.0.0` inside; the host binds loopback only), `LAB_ALLOWED_HOSTS` (extra host names besides loopback the lab answers to, comma separated, e.g. the shared proxy domain — must point at this Mac), `SHELF_URL` (the demo shelf URL the header "Shelf" button opens; written by `scripts/setup.sh` in the family checkout). Keep all of them inside 5150-5199.
 
 ## Mock and live modes
 
