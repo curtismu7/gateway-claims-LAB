@@ -3,7 +3,7 @@
 What the Privilege gateway (mcpgw) versions added, shown in mock only: a nested-claim gate, scope gates, AgentCore governance, on-behalf-of, an AgentCore console, and the readings of the newest images with the 2026-11-02 release features we have not measured.
 
 Tier: Demo
-Repo: https://github.com/ping-sandbox/gateway-claims-LAB
+Repo: https://github.com/curtismu7/gateway-claims-LAB
 Catalog: D99
 
 Catalog D99 is a real catalog id, confirmed by the owner on 2026-10-28 (not a placeholder). **Every Ping release claim here is UNVERIFIED on our tenant.** Nothing in this app calls a real gateway, identity provider, cloud account or tenant, and nothing leaves your machine.
@@ -43,7 +43,7 @@ Three vertical packs (retail, health, finance) change every name. Every row on t
 Prerequisites: Node 26 or newer. Docker only if you use the Docker form. Mock mode works with no setup at all: no tenant, no credentials, no settings file.
 
 ```
-git clone https://github.com/ping-sandbox/gateway-claims-LAB.git
+git clone https://github.com/curtismu7/gateway-claims-LAB.git
 cd gateway-claims-LAB
 npm ci
 npm run build
