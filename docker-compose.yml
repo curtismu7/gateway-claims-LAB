@@ -9,6 +9,7 @@ services:
     ports:
       - "127.0.0.1:${HOST_PORT:-5150}:5150"
     environment:
+      SHELF_URL: ${SHELF_URL:-}
       PORT: "5150"
       GCLAB_BIND: 0.0.0.0
       GCLAB_MODE: mock
