@@ -50,7 +50,7 @@ npm run build
 npm start
 ```
 
-Open http://localhost:5150/. Or in one step: `./scripts/run.sh` (installs and builds if needed, runs the doctor, starts). The repo is internal to the `ping-sandbox` org, so you need access to clone it.
+Open http://localhost:5150/. Or in one step: `./scripts/run.sh` (installs and builds if needed, runs the doctor, starts). The repo is internal to the owner's `curtismu7` account, so you need access to clone it.
 
 ## Settings file
 
