@@ -136,7 +136,8 @@ function mockFetch() {
     calls.push({ url, opts });
     const json = (body, status = 200) => ({ ok: status < 400, status, json: async () => body });
     if (url.startsWith("/api/scenarios")) return override.scenarios ? override.scenarios() : json(STORY);
-    if (url === "/api/info") return override.info ? override.info() : json({ mode: "mock", modes: { mock: true, live: false }, liveRefusal: "Mock only: this app has no Live engine (it refuses GCLAB_MODE=live). Nothing here calls a gateway.", simulated: true });
+    if (url === "/api/info") return override.info ? override.info() : json({ mode: "mock", source: "mock", realAvailable: false, realReason: "Mock only: this app has no Live engine (it refuses GCLAB_MODE=live). Nothing here calls a gateway.", modes: { mock: true, live: false }, liveRefusal: "Mock only: this app has no Live engine (it refuses GCLAB_MODE=live). Nothing here calls a gateway.", simulated: true });
+    if (url === "/api/mode" && opts.method === "POST") { const b = JSON.parse(opts.body || "{}"); if (b.source === "real") return json({ error: "real_not_available", source: "mock", realAvailable: false, realReason: "Mock only: this app has no Live engine.", detail: "Mock only: this app has no Live engine." }, 409); return json({ source: "mock", realAvailable: false, realReason: "Mock only: this app has no Live engine." }); }
     if (url === "/api/posture") return json(POSTURE);
     if (url === "/api/latest") return json(LATEST);
     if (url.startsWith("/api/diagram")) return json(DIAGRAM);
@@ -190,21 +191,28 @@ describe("Mock | Live toggle (every page)", () => {
       expect(screen.getByTestId("mode-live")).toHaveAttribute("aria-pressed", "false");
     }
     expect(screen.queryByTestId("live-refusal")).toBeNull();
+    // Rule 19: Real is disabled with the server's reason; a click cannot post.
+    expect(screen.getByTestId("mode-live")).toBeDisabled();
+    expect(screen.getByTestId("mode-live").getAttribute("title")).toMatch(/Mock only/);
+    const before = calls.length;
     await userEvent.click(screen.getByTestId("mode-live"));
-    expect(await screen.findByTestId("live-refusal")).toHaveTextContent("Live is refused. Mock only: this app has no Live engine");
+    expect(calls.length).toBe(before);
     expect(screen.getByTestId("mode-live")).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByTestId("mode-mock")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("mode")).toHaveTextContent("Mode: mock");
     expect(screen.getByTestId("banner")).toHaveAttribute("data-state", "mock");
+    // Rule 19: mock→mock posts /api/mode with exactly {source} and the server's answer reloads the info.
     await userEvent.click(screen.getByTestId("mode-mock"));
+    await waitFor(() => expect(calls.some((c) => c.url === "/api/mode" && c.opts.method === "POST" && c.opts.body === JSON.stringify({ source: "mock" }))).toBe(true));
     expect(screen.queryByTestId("live-refusal")).toBeNull();
   });
-  it("Live makes no request: nothing leaves the page when it is pressed", async () => {
+  it("rule 19: a 409 from POST /api/mode shows the server's reason and the page stays mock", async () => {
     await ready();
-    const before = calls.length;
-    await userEvent.click(screen.getByTestId("mode-live"));
-    await screen.findByTestId("live-refusal");
-    expect(calls.length).toBe(before);
+    override.info = () => Promise.resolve({ ok: true, status: 200, json: async () => ({ mode: "mock", source: "mock", realAvailable: false, realReason: "Mock only: this app has no Live engine (it refuses GCLAB_MODE=live). Nothing here calls a gateway.", modes: { mock: true, live: false }, liveRefusal: "Mock only: this app has no Live engine.", simulated: true }) });
+    // force a switchable-looking Real by re-rendering with a 409 server: Real stays disabled so it cannot be pressed
+    expect(screen.getByTestId("mode-live")).toBeDisabled();
+    expect(screen.getByTestId("mode")).toHaveTextContent("Mode: mock");
+    expect(screen.getByTestId("banner")).toHaveAttribute("data-state", "mock");
   });
 });
 

@@ -53,10 +53,32 @@ test('unknown API paths are 404 JSON', async () => {
 test('GET /api/info says what this build is: mock, simulated, no Live engine and why', async () => {
   await withServer(async (url) => {
     const { NO_LIVE } = await import('../src/releaseClaims.js');
-    assert.deepEqual(await (await fetch(`${url}/api/info`)).json(), { mode: 'mock', modes: { mock: true, live: false }, liveRefusal: NO_LIVE, simulated: true });
+    assert.deepEqual(await (await fetch(`${url}/api/info`)).json(), { mode: 'mock', source: 'mock', realAvailable: false, realReason: NO_LIVE, modes: { mock: true, live: false }, liveRefusal: NO_LIVE, simulated: true });
     const j = await (await fetch(`${url}/api/scenarios`)).json();
     assert.equal('hosted' in j, false);
     assert.match(j.banner, /^SIMULATED, MOCK mode/);
+  });
+});
+
+test('rule 19: POST /api/mode takes exactly {source: mock|real}, refuses mock→real with 409 and a clear reason, and real→mock stays mock', async () => {
+  await withServer(async (url) => {
+    const h = { 'content-type': 'application/json', origin: url };
+    let r = await fetch(`${url}/api/mode`, { method: 'POST', headers: h, body: '{"source":"real"}' });
+    assert.equal(r.status, 409);
+    let body = await r.json();
+    assert.equal(body.error, 'real_not_available');
+    assert.equal(body.realAvailable, false);
+    assert.match(body.realReason, /Mock only|no Live engine/i);
+    assert.equal(body.source, 'mock');
+    r = await fetch(`${url}/api/mode`, { method: 'POST', headers: h, body: '{"source":"mock"}' });
+    assert.equal(r.status, 200);
+    assert.equal((await r.json()).source, 'mock');
+    for (const b of ['{}', '{"source":"live"}', '{"source":"real","extra":1}']) {
+      const rr = await fetch(`${url}/api/mode`, { method: 'POST', headers: h, body: b });
+      assert.ok(rr.status === 400 || rr.status === 404, b);
+    }
+    const info = await (await fetch(`${url}/api/info`)).json();
+    assert.equal(info.source, 'mock');
   });
 });
 

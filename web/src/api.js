@@ -16,6 +16,14 @@ export async function evaluate(payload) {
 
 export const resetWorkspace = () => workspaceFetch("/api/reset", { method: "POST", body: "{}" }).then((r) => r.ok);
 
+// Rule 19: POST /api/mode with exactly { source }. Returns { ok, status, body }.
+export async function postJson(url, payload) {
+  const r = await workspaceFetch(url, { method: "POST", body: JSON.stringify(payload) });
+  let body = {};
+  try { body = await r.json(); } catch { /* not JSON */ }
+  return { ok: r.ok, status: r.status, body };
+}
+
 // POST /api/scope-gate/evaluate: a v1.261027 scenario id, optionally with the visitor's own scope text.
 export async function evaluateScope(payload) {
   const r = await workspaceFetch("/api/scope-gate/evaluate", { method: "POST", body: JSON.stringify(payload) });

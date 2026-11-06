@@ -9,7 +9,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Posture from "./components/Posture";
 import DiagramTab from "./components/DiagramTab";
 import TalkTrack from "./components/TalkTrack";
-import { getJson, resetWorkspace } from "./api";
+import { getJson, postJson, resetWorkspace } from "./api";
 import { NO_LIVE, RELEASE_BANNER } from "./releaseText";
 
 const THEME_KEY = "gwcl.theme";
@@ -56,6 +56,24 @@ export default function App() {
   const [resetSignal, setResetSignal] = useState(0);
   const [resetMsg, setResetMsg] = useState("");
   const [liveMsg, setLiveMsg] = useState(false); // Live was pressed: this app has no Live engine, and says so
+  const [modeBusy, setModeBusy] = useState(false);
+  const source = info?.source ?? "mock";
+  const realAvailable = info ? info.realAvailable !== false : false;
+  const realReason = info?.realReason || "Mock only.";
+  // Rule 19: switching is a server call (POST /api/mode with exactly {source}). This lab is mock only, so Real is
+  // disabled with the server's reason; a refusal (409) shows the reason and the page stays in mock.
+  const switchMode = async (m) => {
+    if (modeBusy) return;
+    if (m === "real" && !realAvailable) { setLiveMsg(true); return; }
+    setModeBusy(true);
+    try {
+      const r = await postJson("/api/mode", { source: m === "live" ? "real" : "mock" });
+      if (!r.ok) { setLiveMsg(true); return; }
+      setLiveMsg(false);
+      const i = await getJson("/api/info");
+      setInfo(i);
+    } catch { setLiveMsg(true); } finally { setModeBusy(false); }
+  };
   const [theme, setTheme] = useState(initialTheme);
   const tabsRef = useRef(null);
 
@@ -122,8 +140,8 @@ export default function App() {
           </div>
           <div className="head__tools">
             <div className="seg" role="group" aria-label="Mode">
-              <button type="button" aria-pressed="true" onClick={() => setLiveMsg(false)} data-testid="mode-mock">Mock</button>
-              <button type="button" aria-pressed="false" aria-describedby={liveMsg ? "live-refusal" : undefined} onClick={() => setLiveMsg(true)} data-testid="mode-live">Live</button>
+              <button type="button" aria-pressed={source !== "real"} onClick={() => switchMode("mock")} data-testid="mode-mock">Mock</button>
+              <button type="button" aria-pressed={source === "real"} disabled={!realAvailable} title={realAvailable ? undefined : realReason} aria-describedby={liveMsg ? "live-refusal" : undefined} onClick={() => switchMode("live")} data-testid="mode-live">Live</button>
             </div>
             <span className="chip" data-testid="mode">Mode: {info ? info.mode : "mock"} (no Live engine)</span>
             {!presenter && (
