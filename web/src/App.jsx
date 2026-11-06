@@ -12,6 +12,13 @@ import TalkTrack from "./components/TalkTrack";
 import { getJson, resetWorkspace } from "./api";
 import { NO_LIVE, RELEASE_BANNER } from "./releaseText";
 
+const THEME_KEY = "gwcl.theme";
+const THEMES = [["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]];
+function initialTheme() {
+  try { const t = localStorage.getItem(THEME_KEY); if (t === "light" || t === "dark") return t; } catch { /* storage blocked */ }
+  return "auto";
+}
+
 export const TABS = [
   { id: "gate", label: "Nested-claim gate" },
   { id: "scope", label: "v1.261027 scope gates" },
@@ -49,7 +56,10 @@ export default function App() {
   const [resetSignal, setResetSignal] = useState(0);
   const [resetMsg, setResetMsg] = useState("");
   const [liveMsg, setLiveMsg] = useState(false); // Live was pressed: this app has no Live engine, and says so
+  const [theme, setTheme] = useState(initialTheme);
   const tabsRef = useRef(null);
+
+  useEffect(() => { if (theme === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme; }, [theme]);
 
   useEffect(() => { getJson("/api/info").then(setInfo, () => setInfo(null)); }, []);
   useEffect(() => { getJson(`/api/scenarios?vertical=${encodeURIComponent(vertical)}`).then((j) => { setStory(j); setError(null); }, (e) => setError(e.message)); }, [vertical]);
@@ -81,6 +91,11 @@ export default function App() {
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
   }, []);
+
+  const pickTheme = (next) => {
+    try { if (next === "auto") localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, next); } catch { /* not remembered */ }
+    setTheme(next);
+  };
 
   const reset = useCallback(async () => {
     const ok = await resetWorkspace().catch(() => false);
@@ -118,6 +133,11 @@ export default function App() {
                 </select>
               </label>
             )}
+            <label className="shell-theme">Theme
+              <select value={theme} onChange={(e) => pickTheme(e.target.value)}>
+                {THEMES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+              </select>
+            </label>
             <button type="button" onClick={reset} data-testid="reset">Reset</button>
             <button type="button" aria-pressed={presenter} onClick={() => setPresenter((v) => !v)} data-testid="presenter">{presenter ? "Exit presenter (Esc)" : "Presenter (P)"}</button>
           </div>
