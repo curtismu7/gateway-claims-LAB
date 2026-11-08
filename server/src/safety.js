@@ -83,6 +83,18 @@ export function hostCheck(req, res, next) {
 }
 
 const WRITE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+// Behind the lab-proxy the browser's Origin is the proxy's public origin while Host is
+// this lab's own proxy name. The proxy adds X-Forwarded-Host and X-Forwarded-Proto. They are believed only when Host is one of the
+// LAB_ALLOWED_HOSTS names (loopback does not count), so a page reached directly on loopback cannot use them.
+function viaLabProxy(req, origin) {
+  const host = String(req.headers.host || '').trim().toLowerCase().replace(/:\d+$/, '');
+  if (!allowedExtraHosts().has(host)) return false;
+  const xfh = String(req.headers['x-forwarded-host'] || '').trim().toLowerCase();
+  const xfp = String(req.headers['x-forwarded-proto'] || 'https').trim().toLowerCase();
+  return xfh !== '' && (xfp === 'https' || xfp === 'http') && origin === `${xfp}://${xfh}`;
+}
+
 export function sameOriginWrites(req, res, next) {
   if (!WRITE.has(req.method)) return next();
   const site = req.headers['sec-fetch-site'];
@@ -90,7 +102,7 @@ export function sameOriginWrites(req, res, next) {
   const origin = req.headers.origin;
   if (origin) {
     let ok = false;
-    try { ok = new URL(origin).host.toLowerCase() === String(req.headers.host || '').toLowerCase(); } catch { /* malformed */ }
+    try { ok = new URL(origin).host.toLowerCase() === String(req.headers.host || '').toLowerCase() || viaLabProxy(req, origin); } catch { /* malformed */ }
     if (!ok) return res.status(403).json({ error: 'cross_origin', message: 'writes must be same-origin' });
   }
   next();
