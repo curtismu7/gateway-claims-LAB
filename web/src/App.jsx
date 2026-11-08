@@ -8,6 +8,7 @@ import LatestReleases from "./components/LatestReleases";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Posture from "./components/Posture";
 import DiagramTab from "./components/DiagramTab";
+import ShelfLink from "./components/ShelfLink";
 import TalkTrack from "./components/TalkTrack";
 import { getJson, postJson, resetWorkspace } from "./api";
 import { NO_LIVE, RELEASE_BANNER } from "./releaseText";
@@ -156,6 +157,7 @@ export default function App() {
                 {THEMES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
               </select>
             </label>
+            <ShelfLink />
             <button type="button" onClick={reset} data-testid="reset">Reset</button>
             <button type="button" aria-pressed={presenter} onClick={() => setPresenter((v) => !v)} data-testid="presenter">{presenter ? "Exit presenter (Esc)" : "Presenter (P)"}</button>
           </div>

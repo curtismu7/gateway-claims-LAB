@@ -24,12 +24,13 @@ import { createWorkspaces, workspaceFrom } from './workspaces.js';
 import { createConsoleStore } from './consoleStore.js';
 import { createReleaseRouter } from './releaseRoutes.js';
 import { maskDeep, maskTypedDeep } from './mask.js';
+import { mountShelfRoute } from './shelfLink.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEB_DIST = process.env.WEB_DIST || path.resolve(HERE, '../../web/dist');
 const CONFIG = process.env.CUSTOMER_CONFIG || path.resolve(HERE, '../../customer.config.json');
 
-export function createApp({ health = createHealth(), configFile = CONFIG, workspaces = createWorkspaces(), consoles = createConsoleStore() } = {}) {
+export function createApp({ health = createHealth(), configFile = CONFIG, workspaces = createWorkspaces(), consoles = createConsoleStore(), env = process.env } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(hostCheck);
@@ -42,6 +43,7 @@ export function createApp({ health = createHealth(), configFile = CONFIG, worksp
   // typed value that was shown back). Hop panes and signatures are left alone (see mask.js).
   api.use((_req, res, next) => { const send = res.json.bind(res); res.json = (b) => send(maskDeep(b)); next(); });
   api.use('/health', health.router);
+  mountShelfRoute(api, { env });
   const castFor = (req) => loadCast(configFile, verticalFrom(req.query.vertical));
   // customer.config.json is read on every request so editing it shows up on reload.
   api.get('/scenarios', (req, res) => { res.set('Cache-Control', 'no-store'); res.json({ ...buildStory(castFor(req)), verticals: Object.keys(VERTICALS) }); });
