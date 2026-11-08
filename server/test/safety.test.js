@@ -90,3 +90,31 @@ test('review fixes: octets above 255 are not loopback; 4840 is reserved; control
   fs.writeFileSync(f, JSON.stringify({ cast: { brand: 'Acme\u202eevil' } }));
   assert.ok(!/\u202e/.test(loadCast(f).castBrand));
 });
+
+test('behind the lab-proxy: a write is accepted only with the proxy\'s forwarded origin AND an allowed Host', () => {
+  const PROXY = 'gateway-claims.local.ping-devops.com';
+  const fwd = { 'x-forwarded-host': 'local.ping-devops.com:8443', 'x-forwarded-proto': 'https' };
+  const via = (headers) => run(sameOriginWrites, { method: 'POST', headers: { host: `${PROXY}:5150`, ...headers } });
+  const saved = process.env.LAB_ALLOWED_HOSTS;
+  try {
+    process.env.LAB_ALLOWED_HOSTS = PROXY;
+    // what the browser and the proxy really send for a same-origin POST
+    assert.ok(via({ ...fwd, origin: 'https://local.ping-devops.com:8443', 'sec-fetch-site': 'same-origin' }).next);
+    assert.ok(via({ ...fwd, origin: 'https://local.ping-devops.com:8443' }).next);
+    // refused: a foreign origin, a mismatched forwarded host, a wrong scheme, a cross-site fetch, no forwarded host at all
+    for (const headers of [
+      { ...fwd, origin: 'https://evil.example' },
+      { ...fwd, origin: 'https://local.ping-devops.com:9999' },
+      { ...fwd, origin: 'http://local.ping-devops.com:8443' },
+      { ...fwd, origin: 'https://local.ping-devops.com:8443', 'sec-fetch-site': 'cross-site' },
+      { origin: 'https://local.ping-devops.com:8443' },
+      { 'x-forwarded-host': 'evil.example', 'x-forwarded-proto': 'https', origin: 'https://local.ping-devops.com:8443' },
+    ]) assert.equal(via(headers).status, 403, JSON.stringify(headers));
+    // the forwarded headers are not believed on a loopback Host: a page that did not come through the proxy cannot use them
+    const loop = run(sameOriginWrites, { method: 'POST', headers: { host: '127.0.0.1:5150', ...fwd, origin: 'https://local.ping-devops.com:8443' } });
+    assert.equal(loop.status, 403);
+    // and a Host that is not on LAB_ALLOWED_HOSTS cannot use them either
+    delete process.env.LAB_ALLOWED_HOSTS;
+    assert.equal(via({ ...fwd, origin: 'https://local.ping-devops.com:8443' }).status, 403);
+  } finally { if (saved === undefined) delete process.env.LAB_ALLOWED_HOSTS; else process.env.LAB_ALLOWED_HOSTS = saved; }
+});
