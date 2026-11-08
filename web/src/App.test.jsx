@@ -147,6 +147,7 @@ function mockFetch() {
     if (url === "/api/agentcore/evaluate") return json(agcResult(JSON.parse(opts.body).scenario));
     if (url.startsWith("/api/obo")) { if (override.obo) return override.obo(url, opts); return url === "/api/obo/evaluate" ? json(oboRun(JSON.parse(opts.body).scenario, JSON.parse(opts.body))) : json(OBO_STORY); }
     if (url.startsWith("/api/agentcore-console")) return consoleServer(url, opts);
+    if (url === "/api/shelf") return json({ shelfUrl: "https://shelf.example:8443" });
     if (url === "/api/reset") { gw = GW0(); audit = []; return json({ reset: "ok" }); }
     if (url === "/api/evaluate") {
       const body = JSON.parse(opts.body);
@@ -167,6 +168,11 @@ beforeEach(() => { override = {}; gw = GW0(); audit = []; consoleFail = false; m
 const ready = async () => { render(<App />); await screen.findByText("Allowed: act.sub matches"); await screen.findByTestId("verdict"); };
 
 describe("shell", () => {
+  it("shows the Shelf button in the header, linking to the shelf URL from /api/shelf", async () => {
+    await ready();
+    const link = await screen.findByRole("link", { name: "Shelf" });
+    expect(link).toHaveAttribute("href", "https://shelf.example:8443");
+  });
   it("shows the banner, the mode, and sends X-Workspace on API calls", async () => {
     await ready();
     expect(screen.getByTestId("banner")).toHaveTextContent(/^SIMULATED, MOCK mode/);
