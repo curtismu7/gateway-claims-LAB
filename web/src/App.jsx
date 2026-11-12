@@ -8,6 +8,7 @@ import LatestReleases from "./components/LatestReleases";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Posture from "./components/Posture";
 import DiagramTab from "./components/DiagramTab";
+import TopMenu, { applyFontSize } from "./top-menu/TopMenu";
 import ShelfLink from "./components/ShelfLink";
 import TalkTrack from "./components/TalkTrack";
 import { getJson, postJson, resetWorkspace } from "./api";
@@ -76,9 +77,11 @@ export default function App() {
     } catch { setLiveMsg(true); } finally { setModeBusy(false); }
   };
   const [theme, setTheme] = useState(initialTheme);
+  const [fontStep, setFontStep] = useState(() => { try { const f = localStorage.getItem("gwcl.font"); return ["S","M","L"].includes(f) ? f : "M"; } catch { return "M"; } });
   const tabsRef = useRef(null);
 
   useEffect(() => { if (theme === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme; }, [theme]);
+  useEffect(() => { applyFontSize(fontStep); try { localStorage.setItem("gwcl.font", fontStep); } catch {} }, [fontStep]);
 
   useEffect(() => { getJson("/api/info").then(setInfo, () => setInfo(null)); }, []);
   useEffect(() => { getJson(`/api/scenarios?vertical=${encodeURIComponent(vertical)}`).then((j) => { setStory(j); setError(null); }, (e) => setError(e.message)); }, [vertical]);
@@ -140,26 +143,19 @@ export default function App() {
             {!presenter && story && <p className="head__intro">{story.intro}</p>}
           </div>
           <div className="head__tools">
-            <div className="seg" role="group" aria-label="Mode">
-              <button type="button" aria-pressed={source !== "real"} onClick={() => switchMode("mock")} data-testid="mode-mock">Mock</button>
-              <button type="button" aria-pressed={source === "real"} disabled={!realAvailable} title={realAvailable ? undefined : realReason} aria-describedby={liveMsg ? "live-refusal" : undefined} onClick={() => switchMode("live")} data-testid="mode-live">Live</button>
-            </div>
             <span className="chip" data-testid="mode">Mode: {info ? info.mode : "mock"} (no Live engine)</span>
-            {!presenter && (
-              <label className="inline">Vertical{" "}
-                <select value={vertical} onChange={(e) => setVertical(e.target.value)}>
-                  {(story ? story.verticals : ["retail"]).map((v) => <option key={v} value={v}>{v}</option>)}
-                </select>
-              </label>
-            )}
-            <label className="shell-theme">Theme
-              <select value={theme} onChange={(e) => pickTheme(e.target.value)}>
-                {THEMES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-              </select>
-            </label>
-            <ShelfLink />
-            <button type="button" onClick={reset} data-testid="reset">Reset</button>
-            <button type="button" aria-pressed={presenter} onClick={() => setPresenter((v) => !v)} data-testid="presenter">{presenter ? "Exit presenter (Esc)" : "Presenter (P)"}</button>
+            <TopMenu
+              mode={{ value: source === "real" ? "real" : "mock", onChange: (v) => switchMode(v === "real" ? "live" : "mock"), realAvailable, realHint: realReason }}
+              vertical={{ value: vertical, onChange: setVertical, options: story ? story.verticals : ["retail"] }}
+              theme={{ value: theme, onChange: pickTheme }}
+              fontSize={{ value: fontStep, onChange: setFontStep }}
+              present={{ active: presenter, onToggle: () => setPresenter((v) => !v) }}
+              help={{ href: "https://github.com/curtismu7/gateway-claims-LAB#readme" }}
+              version={info?.version || null}
+              onReset={reset}
+            >
+              <ShelfLink />
+            </TopMenu>
           </div>
         </div>
         {liveMsg && <p className="muted" id="live-refusal" role="status" data-testid="live-refusal">Live is refused. {(info && info.liveRefusal) || NO_LIVE} The page stays in mock mode.</p>}

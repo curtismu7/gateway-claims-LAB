@@ -54,7 +54,7 @@ export function createApp({ health = createHealth(), configFile = CONFIG, worksp
   api.get('/latest', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ ...buildLatestStory(), simulated: true }); });
   // What this build is, for the banner and the Mock | Live toggle: the one mode there is, and why Live is refused.
   // Rule 19: what the Mock/Real toggle needs. This lab is mock only, so Real is never available.
-  api.get('/info', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ mode: modeFrom(), source: 'mock', realAvailable: false, realReason: NO_LIVE, modes: { mock: true, live: false }, liveRefusal: NO_LIVE, simulated: true }); });
+  api.get('/info', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ mode: modeFrom(), source: 'mock', realAvailable: false, realReason: NO_LIVE, modes: { mock: true, live: false }, liveRefusal: NO_LIVE, simulated: true, version: (() => { try { return JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version || null; } catch { return null; } })() }); });
   // Rule 19: the toggle's switch. This lab is mock only, so mock→real is refused 409 and real→mock stays mock.
   api.post('/mode', (req, res) => {
     res.set('Cache-Control', 'no-store');
