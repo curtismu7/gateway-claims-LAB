@@ -53,7 +53,9 @@ test('unknown API paths are 404 JSON', async () => {
 test('GET /api/info says what this build is: mock, simulated, no Live engine and why', async () => {
   await withServer(async (url) => {
     const { NO_LIVE } = await import('../src/releaseClaims.js');
-    assert.deepEqual(await (await fetch(`${url}/api/info`)).json(), { mode: 'mock', source: 'mock', realAvailable: false, realReason: NO_LIVE, modes: { mock: true, live: false }, liveRefusal: NO_LIVE, simulated: true });
+    const info = await (await fetch(`${url}/api/info`)).json();
+    delete info.version;
+    assert.deepEqual(info, { mode: 'mock', source: 'mock', realAvailable: false, realReason: NO_LIVE, modes: { mock: true, live: false }, liveRefusal: NO_LIVE, simulated: true });
     const j = await (await fetch(`${url}/api/scenarios`)).json();
     assert.equal('hosted' in j, false);
     assert.match(j.banner, /^SIMULATED, MOCK mode/);
