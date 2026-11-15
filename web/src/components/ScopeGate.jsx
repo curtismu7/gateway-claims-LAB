@@ -44,15 +44,15 @@ function Section({ section, resetSignal }) {
       <h2 id={`sg-${section.id}`}>{section.title}</h2>
       <p className="muted">{section.intro}</p>
       {section.policy && <Json value={section.policy} label="Cedar policy" />}
-      {section.rules && <Json value={{ RequiredClaims_rules: section.rules.map((r) => ({ rule: r.id, Map: { scope: { Elems: r.anyOf } }, opens_tools: r.tools })) }} label="RequiredClaims rules" />}
+      {section.rules && <Json value={section.rules.map((r) => ({ rule: r.id, Map: { scope: { Elems: r.anyOf } }, opens_tools: r.tools }))} label="RequiredClaims rules" hot={["Elems", "opens_tools"]} />}
       <div className="seg" role="group" aria-label={`${section.title} scenario`}>
         {section.scenarios.map((s) => <button key={s.id} type="button" aria-pressed={s.id === id} onClick={() => setId(s.id)}>{s.title}</button>)}
       </div>
       <p><span className={STATUS_CLASS[scenario.evidence] || "tag"}>{scenario.evidence}</span> <span className="lesson" data-testid={`scope-lesson-${section.id}`}>{scenario.lesson}</span></p>
       {fail && <p className="field-error" role="alert">{fail}</p>}
       <Outcome run={run} />
-      <h3>Request</h3><Json value={request} label="Request" />
-      {run && <><h3>Response</h3><Json value={run.result} label="Response" /></>}
+      <h3>Request</h3><Json value={request} label="Request" hot={["bearerScope", "policyState", "resource"]} />
+      {run && <><h3>Response</h3><Json value={run.result} label="Response" hot={["enforced", "shadow", "atm", "jsonRpcCode"]} /></>}
       <label htmlFor={`sg-scope-${section.id}`}>Try your own scope (space separated)</label>
       <input id={`sg-scope-${section.id}`} type="text" value={scope} maxLength={256} onChange={(e) => setScope(e.target.value)} spellCheck={false} autoComplete="off" />
       <button type="button" onClick={() => exec(id, scope)}>Evaluate this scope</button>

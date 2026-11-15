@@ -4,6 +4,7 @@ import { visible } from "./safeText";
 import userEvent from "@testing-library/user-event";
 import App, { BANNER_UNKNOWN } from "./App";
 import { labelOffsets } from "./components/PatternDiagram";
+import { setJsonView } from "./components/JsonPane.jsx";
 
 const TOKEN = (claims) => ({ header: { alg: "RS256" }, claims, signature: "<MOCK-SIGNATURE: not a real signature>" });
 const SCEN = [
@@ -163,7 +164,7 @@ function mockFetch() {
     return json({}, 404);
   });
 }
-beforeEach(() => { override = {}; gw = GW0(); audit = []; consoleFail = false; mockFetch(); window.location.hash = ""; });
+beforeEach(() => { setJsonView("form"); override = {}; gw = GW0(); audit = []; consoleFail = false; mockFetch(); window.location.hash = ""; });
 
 const ready = async () => { render(<App />); await screen.findByText("Allowed: act.sub matches"); await screen.findByTestId("verdict"); };
 
@@ -223,6 +224,11 @@ describe("nested-claim gate tab", () => {
   it("allows the matching scenario and shows token JSON, rule, flattened paths and hops", async () => {
     await ready();
     expect(screen.getByTestId("verdict")).toHaveTextContent("ALLOW");
+    // Rule 24: the Form view is the default (a label and a value per field); the JSON toggle shows the exact JSON text.
+    expect(screen.getByTestId("token-claims")).toHaveTextContent("client_id");
+    expect(screen.getByTestId("token-claims-box")).toHaveAttribute("data-view", "form");
+    await userEvent.click(screen.getByTestId("token-claims-raw"));
+    expect(screen.getByTestId("token-claims-box")).toHaveAttribute("data-view", "raw");
     expect(screen.getByTestId("token-claims")).toHaveTextContent('"sub": "a"');
     expect(screen.getByTestId("rule-json")).toHaveTextContent("act.sub");
     expect(within(screen.getByTestId("flat-table")).getByText("act.sub")).toBeInTheDocument();
