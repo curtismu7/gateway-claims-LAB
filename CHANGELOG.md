@@ -1,5 +1,12 @@
 # Changelog
 
+## Users and groups from claims: review fixes (2026-11-15)
+
+- A custom run and a scenario run no longer overwrite each other: whichever request was sent last wins, and an answer that arrives late for an older request is dropped (it could replace the custom run you had just made).
+- After a custom run, "End-user setting for this run" shows the setting that run used, not the scenario's own.
+- In the Subject pattern `?` is one whole character, so an emoji is matched by one `?`, never by half of it. (How the console counts characters is not measured; this is the lab's reading.)
+- Tests: 1 server and 3 web tests added (285 in all); each fix was checked by removing it and seeing a test fail.
+
 ## Users and groups from claims (2026-11-15)
 
 - New tab "Users and groups from claims": a mock-only teaching tab that shows Privilege taking the user and the groups from claims in a token, beside the lab that registers people in PingOne. Twelve scenarios in three steps run in order: the identity gate (issuer, signing key, audience, lifetime, Subject with `*` and `?`, required claims by dotted path; traps: `act` as the text `"{}"`, a required claim typed as the audience, an unpublished signing key), the end user (Opaque or Resolved, the console refusal for a pinned Subject), and claim-conditioned grant tiers (all tools, fewer, or a 403). Comparison panel and the Cedar point. Simulation: every value invented, no cryptography.

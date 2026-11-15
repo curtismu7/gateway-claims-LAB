@@ -35,15 +35,17 @@ const describe = (v) => (typeof v === 'string' ? `"${shown(v)}"` : Array.isArray
 
 /** Wildcard match: * is any run of characters, ? is one character, everything else is literal. Iterative, no regex, so user text cannot backtrack. */
 export function globMatch(pattern, text) {
+  // Compare whole characters (code points), so ? never matches half of a surrogate pair.
+  const pat = Array.from(pattern); const txt = Array.from(text);
   let p = 0; let t = 0; let star = -1; let mark = 0;
-  while (t < text.length) {
-    if (p < pattern.length && pattern[p] === '*') { star = p++; mark = t; }
-    else if (p < pattern.length && (pattern[p] === '?' || pattern[p] === text[t])) { p++; t++; }
+  while (t < txt.length) {
+    if (p < pat.length && pat[p] === '*') { star = p++; mark = t; }
+    else if (p < pat.length && (pat[p] === '?' || pat[p] === txt[t])) { p++; t++; }
     else if (star !== -1) { p = star + 1; t = ++mark; }
     else return false;
   }
-  while (p < pattern.length && pattern[p] === '*') p++;
-  return p === pattern.length;
+  while (p < pat.length && pat[p] === '*') p++;
+  return p === pat.length;
 }
 
 /** The text values a claim carries, for tier matching: a text claim is one value (the scope claim is split per value, as measured), a list gives one value per item. */

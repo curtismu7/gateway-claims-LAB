@@ -80,7 +80,7 @@ function Tiers({ story, run }) {
   );
 }
 
-function CustomEditor({ story, scenario, onRun, vertical, resetSignal }) {
+function CustomEditor({ story, scenario, onRun, begin, vertical, resetSignal }) {
   const initial = () => ({
     claims: JSON.stringify(scenario.token.claims, null, 2), kid: scenario.token.kid,
     subject: scenario.identity?.subject ?? story.defaults.subject, endUserClaim: scenario.identity?.endUser?.claim ?? story.defaults.endUserClaim, endUserMode: scenario.identity?.endUser?.mode ?? story.defaults.endUserMode,
@@ -93,9 +93,11 @@ function CustomEditor({ story, scenario, onRun, vertical, resetSignal }) {
     setError(null);
     let token;
     try { token = JSON.parse(f.claims); } catch { return setError("Token claims are not valid JSON."); }
+    const mine = begin(); // a newer scenario or custom run makes this answer stale
     const res = await evaluateClaimsUsers({ vertical, token, kid: f.kid, subject: f.subject, endUserClaim: f.endUserClaim, endUserMode: f.endUserMode }).catch(() => ({ ok: false, status: 0, body: {} }));
-    if (!res.ok) return setError(`${res.body.error || `HTTP ${res.status}`}${res.body.detail ? `: ${res.body.detail}` : ""}`);
-    onRun(res.body);
+    if (!mine.current()) return;
+    if (!res.ok) { mine.done(); return setError(`${res.body.error || `HTTP ${res.status}`}${res.body.detail ? `: ${res.body.detail}` : ""}`); }
+    onRun(res.body, f.endUserMode);
   };
   return (
     <section className="panel" aria-labelledby="cu-custom-h" data-testid="cu-custom">
@@ -145,6 +147,10 @@ export default function ClaimsUsers({ vertical, resetSignal }) {
   }, [vertical]);
 
   useEffect(() => { if (id) { setMode(""); exec(id, ""); } }, [id, resetSignal, exec]);
+
+  // A custom run takes the place of the scenario run: it makes any scenario answer still in flight stale, and the setting shown is the one the custom run used.
+  const beginCustom = () => { const mine = ++seq.current; setBusy(true); setFail(null); return { current: () => mine === seq.current, done: () => setBusy(false) }; };
+  const customRun = (body, endUserMode) => { setBusy(false); setRun(body); setMode(endUserMode); };
 
   if (error) return <p className="field-error" role="alert">Could not load the users and groups from claims tab ({error}).</p>;
   if (!story || !id) return <p className="muted">Loading...</p>;
@@ -254,7 +260,7 @@ export default function ClaimsUsers({ vertical, resetSignal }) {
           {story.cedar.facts.map((f) => <li key={f.id}><ClaimTag tag={f.tag} tags={story.tags} /> {f.text} <span className="muted">Source: {f.source}.</span></li>)}
         </ul>
       </section>
-      <CustomEditor story={story} scenario={sc} vertical={vertical} resetSignal={resetSignal} onRun={setRun} />
+      <CustomEditor story={story} scenario={sc} vertical={vertical} resetSignal={resetSignal} onRun={customRun} begin={beginCustom} />
       <section className="panel" aria-labelledby="cu-facts-h">
         <h2 id="cu-facts-h">What we know, and how well</h2>
         <ul className="facts" data-testid="cu-facts">

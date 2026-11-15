@@ -133,6 +133,13 @@ test('the End-user claim is a dotted claim path; a claim that is not in the toke
   assert.equal(number.code, 'end_user_claim_missing', 'a number is not a person');
 });
 
+test('? is one whole character: an emoji is one, never half of a surrogate pair', () => {
+  assert.equal(globMatch('?', '\u{1F600}'), true);
+  assert.equal(globMatch('a?b', 'a\u{1F600}b'), true);
+  assert.equal(globMatch('a??b', 'a\u{1F600}b'), false);
+  assert.equal(globMatch('a\u{1F600}b', 'a\u{1F600}b'), true);
+  assert.equal(globMatch('*\u{1F600}', 'x\u{1F600}'), true);
+});
 test('Subject uses * and ? wildcards, matched without a regex and in bounded time', () => {
   for (const [p, t, want] of [['*', 'anything', true], ['*', '', true], ['', '', true], ['', 'a', false], ['ana-*', 'ana-lopez', true], ['ana-*', 'ben-okafor', false], ['a?a', 'ana', true], ['a?a', 'aa', false], ['?', 'x', true], ['abc', 'abc', true], ['abc', 'abd', false], ['*-lopez', 'ana-lopez', true], ['a*b*c', 'aXXbYYc', true], ['a*b*c', 'aXXbYY', false], ['a.c', 'abc', false], ['a[b]c', 'abc', false]]) assert.equal(globMatch(p, t), want, `${p} ~ ${t}`);
   const t0 = Date.now();
