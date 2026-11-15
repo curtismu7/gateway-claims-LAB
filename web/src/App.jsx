@@ -181,7 +181,7 @@ export default function App() {
                   {story.talkTrack.filter((t) => (tab === "gate" ? ["say-first", "gate", "trap", "unverified"] : tab === "scope" ? ["scope-gates", "unverified"] : tab === "agentcore" ? ["agentcore-gov", "unverified"] : tab === "latest" ? ["latest", "unverified"] : tab === "claimsusers" ? ["claims-users", "unverified"] : tab === "obo" ? ["obo", "why-obo"] : tab === "console" ? ["console", "why-console"] : tab === "posture" ? ["posture"] : ["gate"]).includes(t.id)).map((t) => <p key={t.id}><strong>{t.title}.</strong> {t.say}</p>)}
                 </aside>
               )}
-              {tab === "gate" && <ClaimGate key={vertical} story={story} resetSignal={resetSignal} requestedId={requested} onSelect={pickScenario} />}
+              {tab === "gate" && <ClaimGate key={vertical} story={story} resetSignal={resetSignal} requestedId={requested} onSelect={pickScenario} source={source === "real" ? "real" : "mock"} />}
               {tab === "claimsusers" && <ClaimsUsers key={vertical} vertical={vertical} resetSignal={resetSignal} />}
               {tab === "scope" && (scopeStory ? <ScopeGate key={vertical} scope={scopeStory} resetSignal={resetSignal} /> : <p className="muted">Loading...</p>)}
               {tab === "agentcore" && (agStory ? <AgentcoreGov story={agStory} resetSignal={resetSignal} /> : <p className="muted">Loading...</p>)}

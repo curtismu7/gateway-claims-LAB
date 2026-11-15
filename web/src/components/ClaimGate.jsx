@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import Json from "./Json";
 import { evaluate } from "../api";
 import { visible } from "../safeText";
+import GatewayTrace from "../gateway-trace/GatewayTrace";
 
 const STATUS_CLASS = { measured: "tag tag--ok", inferred: "tag", UNVERIFIED: "tag tag--warn" };
 
@@ -74,7 +75,7 @@ function CustomEditor({ scenario, rule, onResult, resetSignal }) {
   );
 }
 
-export default function ClaimGate({ story, resetSignal, requestedId, onSelect }) {
+export default function ClaimGate({ story, resetSignal, requestedId, onSelect, source = "mock" }) {
   const known = (v) => story.scenarios.some((s) => s.id === v);
   const [id, setId] = useState(known(requestedId) ? requestedId : story.scenarios[0].id);
   // A link such as /#scenario-act-text selects that scenario; an unknown id keeps the current one.
@@ -104,6 +105,7 @@ export default function ClaimGate({ story, resetSignal, requestedId, onSelect })
         <Verdict result={result} />
         {result && <FlatTable flat={result.flat} />}
         {result && <Hops hops={result.hops} traceId={result.traceId} />}
+        <GatewayTrace source={source} exchanges={result?.trace ? [{ step: 1, title: "Agent calls the gateway", status: result.trace.response?.status ?? null, trace: result.trace }] : []} />
       </section>
       <section className="panel" aria-labelledby="tok-h">
         <h2 id="tok-h">Token (decoded)</h2>
