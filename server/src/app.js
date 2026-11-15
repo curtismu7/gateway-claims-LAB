@@ -25,6 +25,18 @@ import { createConsoleStore } from './consoleStore.js';
 import { createReleaseRouter } from './releaseRoutes.js';
 import { maskDeep, maskTypedDeep } from './mask.js';
 import { mountShelfRoute } from './shelfLink.js';
+import { readFileSettings, doorConfig, createRealDoor } from './gatewayReal.js';
+
+// Real mode = the shared gateway hop: an agent key from the shared settings file calling a live Privilege door.
+// The environment wins over the file: GCL_* variables overlay the parsed file text.
+export function realDoorFrom(env = process.env) {
+  const p = env.STANDALONE_ENV || `${env.HOME || ''}/Development/.env`;
+  let text = '';
+  try { text = fs.readFileSync(p, 'utf8'); } catch { /* the environment may still carry the keys */ }
+  for (const [k, v] of Object.entries(env)) if (k.startsWith('GCL_GW_') && v) text += `\n${k}=${v}`;
+  const cfg = doorConfig(text, 'GCL');
+  return cfg.ok ? createRealDoor({ config: cfg, clientInfo: { name: 'gateway-claims-lab', version: '0.1.0' } }) : null;
+}
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEB_DIST = process.env.WEB_DIST || path.resolve(HERE, '../../web/dist');
@@ -46,6 +58,20 @@ export function createApp({ health = createHealth(), configFile = CONFIG, worksp
   mountShelfRoute(api, { env });
   const castFor = (req) => loadCast(configFile, verticalFrom(req.query.vertical));
   // customer.config.json is read on every request so editing it shows up on reload.
+
+  // One real gateway check: tools/list through the door, then the gateway's refusal for a tool nothing grants.
+  api.post('/gateway-check', async (req, res) => {
+    const door = realDoorFrom();
+    if (!door) return res.status(409).json({ error: 'real_not_available', message: 'Real is not configured (the GCL_* settings are missing).' });
+    if (req.body && Object.keys(req.body).some((k) => !['app', 'caller'].includes(k))) return res.status(400).json({ error: 'bad_request', detail: 'the only accepted body fields are { "app", "caller" }' });
+    const app = String(req.body?.app || door.apps[0]);
+    if (!door.apps.includes(app)) return res.status(400).json({ error: 'bad_app', detail: `app must be one of ${door.apps.join(', ')}` });
+    const caller = req.body?.caller && door.callers.some((c) => c.id === req.body.caller) ? req.body.caller : door.callers[0].id;
+    const listing = await door.list(app, caller);
+    const out = { app, caller, gateway: door.origin, listing };
+    if (listing.ok) out.refusal = await door.call(app, caller, 'gateway_claims_refusal_probe_tool', {});
+    res.json(out);
+  });
   api.get('/scenarios', (req, res) => { res.set('Cache-Control', 'no-store'); res.json({ ...buildStory(castFor(req)), verticals: Object.keys(VERTICALS) }); });
   api.get('/diagram', (req, res) => { res.set('Cache-Control', 'no-store'); res.json(buildDiagram(castFor(req), DIAGRAM_NAMES.includes(req.query.name) ? req.query.name : 'claim-gate')); });
   api.get('/scope-gate', (req, res) => { res.set('Cache-Control', 'no-store'); res.json({ ...buildScopeStory(castFor(req)), tokenLabel: 'MOCK values: invented for education, never a real credential', simulated: true }); });
@@ -62,7 +88,11 @@ export function createApp({ health = createHealth(), configFile = CONFIG, worksp
     const next = b.source;
     if (next !== 'mock' && next !== 'real') return res.status(400).json({ error: 'bad_mode', detail: 'source must be exactly "mock" or "real"' });
     if (!Object.keys(b).every((k) => k === 'source')) return res.status(400).json({ error: 'unknown_field', detail: 'the body takes only source' });
-    if (next === 'real') return res.status(409).json({ error: 'real_not_available', source: 'mock', realAvailable: false, realReason: NO_LIVE, detail: NO_LIVE });
+    if (next === 'real') {
+      const door = realDoorFrom();
+      if (!door) return res.status(409).json({ error: 'real_not_available', source: 'mock', realAvailable: false, realReason: NO_LIVE, detail: NO_LIVE });
+      return res.json({ source: 'real', realAvailable: true, doors: door.apps, gateway: door.origin });
+    }
     return res.json({ source: 'mock', realAvailable: false, realReason: NO_LIVE, detail: NO_LIVE });
   });
 
