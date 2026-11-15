@@ -20,6 +20,7 @@ import { POSTURE } from './postureData.js';
 import { buildLatestStory } from './latestStory.js';
 import { ClaimsInputError, evaluateClaims } from './claims.js';
 import { buildHops, newTrace } from './trace.js';
+import { claimGateTrace } from './claimGateTrace.js';
 import { createWorkspaces, workspaceFrom } from './workspaces.js';
 import { createConsoleStore } from './consoleStore.js';
 import { createReleaseRouter } from './releaseRoutes.js';
@@ -93,7 +94,9 @@ export function createApp({ health = createHealth(), configFile = CONFIG, worksp
       res.set('traceparent', hops[0].traceparent);
       // A custom token and rule are the visitor's own text: what the answer quotes back (claim names and values, the checks) is masked if credential-shaped.
       const typed = scenario ? { checks: result.checks, flat: result.flat } : maskTypedDeep({ checks: result.checks, flat: result.flat });
-      return res.json({ ...result, ...typed, scenario: run.scenario, expected: scenario ? scenario.expected : null, workspace: ws, traceId: trace.traceId, hops });
+      // The trace panel ("What Privilege did"): built from the same checks the reply carries, so a typed value is already masked.
+      const gatewayTrace = claimGateTrace({ cast: story.cast, scenario: run.scenario, decision: result.decision, checks: typed.checks, traceparent: hops[0].traceparent });
+      return res.json({ ...result, ...typed, scenario: run.scenario, expected: scenario ? scenario.expected : null, workspace: ws, traceId: trace.traceId, hops, trace: gatewayTrace });
     } catch (e) {
       if (e instanceof ClaimsInputError) return res.status(400).json({ error: e.code, detail: e.message });
       throw e;

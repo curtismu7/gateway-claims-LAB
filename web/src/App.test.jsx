@@ -204,7 +204,10 @@ function mockFetch() {
       if (body.scenario) {
         const s = SCEN.find((x) => x.id === body.scenario);
         const trap = s.id === "act-text";
-        return json({ decision: s.expected, expected: s.expected, traceId: "a".repeat(32), hops: [hop(1), hop(2), hop(3)],
+        const mockChecks = [{ path: "client_id", ok: true, detail: "client_id equals the required value" }, { path: "act.sub", ok: !trap, detail: trap ? "act is the string \"{}\", not an object" : "act.sub equals the required value" }];
+        const gwTrace = { source: "mock", request: { method: "POST", url: "https://mcp.northwind.invalid/orders/mcp", headers: { authorization: `Bearer <MOCK-ISSUED token, scenario: ${s.id}>` }, body: null }, response: { status: trap ? 403 : 200, headers: {}, body: null },
+          decisions: mockChecks.map((c) => ({ id: `claim-${c.path}`, label: `Required claim ${c.path}`, outcome: c.ok ? "pass" : "fail", basis: "checked", evidence: c.detail })), record: `rule-eval scenario=${s.id}` };
+        return json({ decision: s.expected, expected: s.expected, traceId: "a".repeat(32), hops: [hop(1), hop(2), hop(3)], trace: gwTrace,
           checks: [{ path: "client_id", ok: true, reason: "match", detail: "ok" }, { path: "act.sub", ok: !trap, reason: trap ? "parent_not_object" : "match", detail: trap ? "act is the string \"{}\", not an object" : "ok" }],
           flat: trap ? [{ path: "act", value: "{}" }, { path: "client_id", value: "a" }] : [{ path: "act.sub", value: "a" }, { path: "client_id", value: "a" }] });
       }
@@ -270,6 +273,18 @@ describe("Mock | Live toggle (every page)", () => {
 });
 
 describe("nested-claim gate tab", () => {
+  it("Run shows the What Privilege did panel under the result: a simulated gateway, every decision checked, the refusal named", async () => {
+    await ready();
+    const panel = await screen.findByTestId("gateway-trace");
+    expect(within(panel).getByRole("heading", { name: "What Privilege did" })).toBeInTheDocument();
+    expect(screen.getByTestId("gateway-trace-basis")).toHaveTextContent(/Simulated/);
+    expect(screen.getByTestId("trace-1-decisions").querySelectorAll("li")).toHaveLength(2);
+    expect(panel).toHaveTextContent("all 2 decisions passed");
+    expect(panel).not.toHaveTextContent(/inferred from the outcome/);
+    await userEvent.click(screen.getByRole("button", { name: 'Denied: act emitted as the text "{}"' }));
+    await waitFor(() => expect(screen.getByTestId("gateway-trace")).toHaveTextContent("refused at: Required claim act.sub"));
+    expect(screen.getByTestId("trace-1")).toHaveTextContent("HTTP 403");
+  });
   it("allows the matching scenario and shows token JSON, rule, flattened paths and hops", async () => {
     await ready();
     expect(screen.getByTestId("verdict")).toHaveTextContent("ALLOW");

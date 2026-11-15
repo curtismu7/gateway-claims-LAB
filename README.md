@@ -99,7 +99,7 @@ Other commands: `npm run talk-track`, `npm run mock-table`, `npm run content-pac
 | Endpoint | |
 | --- | --- |
 | `GET /api/scenarios?vertical=retail\|health\|finance` | banner, mock token for each scenario, the rule, labelled facts |
-| `POST /api/evaluate` | `{"scenario": "<id>"}` or a custom `{"token": {...}, "rule": {"requiredClaims": [{"path": "act.sub", "equals": "..."}]}}`; bounded input, 400 with a code on bad input; also returns `hops` and `traceId` |
+| `POST /api/evaluate` | `{"scenario": "<id>"}` or a custom `{"token": {...}, "rule": {"requiredClaims": [{"path": "act.sub", "equals": "..."}]}}`; bounded input, 400 with a code on bad input; also returns `hops`, `traceId` and `trace` (the "What Privilege did" record the page draws under the result: one `checked` decision per required claim, all simulated) |
 | `GET /api/scope-gate`, `POST /api/scope-gate/evaluate` | the v1.261027 scenarios, with an optional scope text of your own |
 | `GET /api/agentcore`, `POST /api/agentcore/evaluate` | the v1.261028 tables and checks |
 | `GET /api/latest` | the v1.261029 and v1.261030 readings and the not-yet-measured list |
