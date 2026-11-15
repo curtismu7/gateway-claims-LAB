@@ -13,6 +13,7 @@ import ShelfLink from "./components/ShelfLink";
 import TalkTrack from "./components/TalkTrack";
 import { getJson, postJson, resetWorkspace } from "./api";
 import { NO_LIVE, RELEASE_BANNER } from "./releaseText";
+import PrivilegeCheck from "./privilege-check/PrivilegeCheck.jsx";
 
 const THEME_KEY = "gwcl.theme";
 const THEMES = [["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]];
@@ -161,6 +162,8 @@ export default function App() {
         {liveMsg && <p className="muted" id="live-refusal" role="status" data-testid="live-refusal">Live is refused. {(info && info.liveRefusal) || NO_LIVE} The page stays in mock mode.</p>}
       </header>
       <main>
+
+        <PrivilegeCheck />
         <p className="sr-only" role="status" aria-live="polite">{resetMsg}</p>
         <div role="tablist" aria-label="Lab sections" className="tabs" ref={tabsRef}>
           {TABS.map((t, i) => (

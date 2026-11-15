@@ -142,3 +142,26 @@ On Node 26: 237 tests pass (161 server, 54 web, 22 scripts).
 - Found a problem? Open an issue on the repo.
 
 Not done: no SE k8s build (deferred by the owner, 2026-10-31) and no Live engine. Ping release claims shown here are UNVERIFIED on our tenant; this repository is a simulation, not a statement from Ping.
+
+---
+
+## Real mode: through the PingOne Privilege gateway
+
+Real mode here is one live call through the SE PingOne Privilege gateway
+(`https://mcpgw.ai-demo.ping-devops.com`) with an agent access key from the shared settings
+file (`~/Development/.env`, or the file `STANDALONE_ENV` names).
+
+**Privilege objects this lab uses:**
+
+| Object | Value |
+|---|---|
+| Gateway | `mcpgw.ai-demo.ping-devops.com` (cluster `ai-demo-cmuir`) |
+| Door (Agentic App) | `aggregate-limited` — client path `/aggregate-limited/mcp` |
+| Caller | agent access key `GCL_GW_KEY_LAB_AGENT` (write-only, never shown) |
+| Backend | `aggregate` = the gateway's MCP aggregate over `opensearch` (9 tools) + `banking-mcp` (33 tools); `aggregate-limited` = the same members with a tool filter |
+
+**What runs in Real:** the **Privilege gateway check** (`POST /api/gateway-check`, card on the
+page) — one live `tools/list` through the door with the key, then one `tools/call` probe of a
+tool no policy grants, so you see the gateway's own refusal shape. The gateway's words come
+back unaltered (keys scrubbed). Settings keys: `GCL_GW_URL`, `GCL_GW_APPS`,
+`GCL_GW_KEY_<NAME>` (optional `GCL_GW_VERSION`).
