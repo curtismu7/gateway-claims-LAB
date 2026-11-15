@@ -11,6 +11,7 @@ import Posture from "./components/Posture";
 import DiagramTab from "./components/DiagramTab";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu";
 import ShelfLink from "./components/ShelfLink";
+import VerifyMark from "./components/VerifyMark";
 import TalkTrack from "./components/TalkTrack";
 import { getJson, postJson, resetWorkspace } from "./api";
 import { CLAIMS_USERS_BANNER, NO_LIVE, RELEASE_BANNER } from "./releaseText";
@@ -157,6 +158,7 @@ export default function App() {
               onReset={reset}
             >
               <ShelfLink />
+              <VerifyMark id="gateway-claims-lab" />
             </TopMenu>
           </div>
         </div>
