@@ -128,7 +128,7 @@ npm test    # server (node --test), web (vitest), scripts
 
 The shared checks are run by hand, because the scripts are not shipped into this repo's CI: `bash <AI-DEMO-Standalone>/scripts/check-drift.sh .`, `bash <AI-DEMO-Standalone>/scripts/check-css.sh .` and `node <demo-kit-base>/scripts/conformance.mjs . --new`. Conformance reports two advisory rule 18 warnings on purpose (the deferred SE k8s build).
 
-On Node 26: 276 tests pass (188 server, 64 web, 24 scripts), run on the MacBook Air with `air-test`.
+On Node 26: 281 tests pass (193 server, 64 web, 24 scripts), run on the MacBook Air with `air-test`.
 
 ## Troubleshooting
 

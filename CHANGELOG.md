@@ -7,7 +7,7 @@
 - Tags: measured only where the notes measured it; the owner's statement of 2026-11-15 that any claim can name the user or groups is UNVERIFIED, with its own chip. The banner says it is a simulation, also in presenter mode.
 - Typed text: a credential-looking key id, Subject or End-user claim is refused (400); a typed token is not echoed and every typed value shown back is masked. The masking sweeps cover the new endpoints.
 - Generated: `docs/talk-track.md` and `content-pack.json` (a card and two glossary terms); the doctor checks the scenarios in every vertical.
-- Tests: 24 server, 9 web and 2 script tests added (276 in all).
+- Tests: 29 server, 9 web and 2 script tests added (281 in all). Five of the server tests pin cases an independent review found unpinned: Opaque never looks anyone up (even a person in the directory), exact audience, a missing `iat`, an anchored Subject through the engine, and an exact-case Resolved lookup.
 
 ## Moved to the -LAB standard (2026-11-01)
 

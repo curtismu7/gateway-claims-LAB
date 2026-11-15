@@ -144,6 +144,39 @@ test('Subject uses * and ? wildcards, matched without a regex and in bounded tim
   assert.equal(run({ scenario: 'opaque-allowed', subject: 'ben-*', endUserClaim: 'client_id' }).code, 'subject_mismatch');
 });
 
+// Review gaps (the behaviour was right; these pin it so a later change cannot loosen it unnoticed).
+test('Opaque never looks anyone up, even a person who IS in the directory', () => {
+  const base = run({ scenario: 'opaque-allowed' }).token.claims;
+  const r = run({ scenario: 'opaque-allowed', token: { ...base, sub: 'ana-lopez' } });
+  assert.equal(r.decision, 'allow');
+  assert.deepEqual(r.endUser, { mode: 'opaque', claim: 'sub', value: 'ana-lopez', resolved: null, directoryGroups: null, cedarGroupRulesApply: false });
+});
+
+test('the audience is an exact match: a prefix, a suffix or a longer value is refused, and a list that contains it is accepted', () => {
+  const base = run({ scenario: 'opaque-allowed' }).token.claims;
+  for (const aud of [`${base.aud}x`, `x${base.aud}`, base.aud.slice(0, -1), base.aud.toUpperCase()]) assert.equal(run({ scenario: 'opaque-allowed', token: { ...base, aud } }).code, 'audience_mismatch', aud);
+  assert.equal(run({ scenario: 'opaque-allowed', token: { ...base, aud: [base.aud] } }).decision, 'allow');
+});
+
+test('a token with no iat has no readable lifetime and is refused, not treated as issued at zero', () => {
+  const { iat, ...noIat } = run({ scenario: 'opaque-allowed' }).token.claims;
+  const r = run({ scenario: 'opaque-allowed', token: noIat });
+  assert.equal(r.status, 401); assert.equal(r.code, 'lifetime_unreadable'); assert.equal(failedStep(r), 'lifetime');
+});
+
+test('the Subject pattern is anchored over the whole sub, end to end through the engine', () => {
+  const base = run({ scenario: 'opaque-allowed' }).token.claims;
+  assert.equal(run({ scenario: 'opaque-allowed', subject: 'sam-*', token: { ...base, sub: 'xsam-rivera' } }).code, 'subject_mismatch');
+  assert.equal(run({ scenario: 'opaque-allowed', subject: '*-rivera', token: { ...base, sub: 'sam-rivera-x' } }).code, 'subject_mismatch');
+  assert.equal(run({ scenario: 'opaque-allowed', subject: 'sam-*', token: { ...base, sub: 'sam-rivera' } }).decision, 'allow');
+});
+
+test('Resolved looks the person up with an exact match: a different case is not the same user', () => {
+  const base = run({ scenario: 'resolved-allowed' }).token.claims;
+  const r = run({ scenario: 'resolved-allowed', token: { ...base, sub: 'Ana-Lopez' } });
+  assert.equal(r.status, 403); assert.equal(r.code, 'user_not_found'); assert.equal(r.endUser.resolved, false);
+});
+
 test('grant tiers: any one listed value matches a claim, every claim in a rule must match, a tier grants only its own tools and never falls back to all tools', () => {
   const s = story();
   const flat = (o) => flattenClaims(o);
