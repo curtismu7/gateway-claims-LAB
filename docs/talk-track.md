@@ -42,6 +42,10 @@ Ping release claim, UNVERIFIED on our tenant. The deck says that on Bedrock Agen
 
 Per Ping's deck (slide 45), UNVERIFIED on our tenant. Challenge: Agents created in cloud consoles sit outside identity processes: nobody inventoried them and nobody knows what they reach. Each over-privileged agent is a silent breach path that no current review covers. Technical value: Cross-cloud inventory, permission review, 46-finding risk scores and one console to fix or delete. Business value: Cuts agent-audit effort sharply and closes exfiltration paths before they are exploited.
 
+## Users and groups from claims
+
+Simulation, mock only. Privilege can take WHO the person is and WHAT they may do from claims in the token, so for a caller whose token already says it there may be nobody to register. Three steps, in order. The identity gate: issuer, signing key, audience, lifetime, subject and required claims. The end-user setting: Opaque records the person from a claim and never looks them up, Resolved needs the person to exist in Privilege. Then claim-conditioned grant tiers: any claim by path, any one listed value matches, every claim must match, and a tier grants only its own tools. The same agent gets nine tools, three tools or a 403 depending on the claim. Measured: the gate accepting a PingFederate token, the act "{}" trap, the required claim typed as the audience, an unpublished signing key, the console refusal when Subject is pinned while the End-user claim reads sub, and scope tiers. Not measured: that any claim can name the user or the groups. That is the owner's statement of 2026-11-15, UNVERIFIED. The sibling lab teaches the opposite route, registering people in PingOne.
+
 ## What we do not claim
 
 That nested matching is NEW in gateway v1.261024 is our inference from binary symbols. It is UNVERIFIED. Which of the scope behaviours first appeared in v1.261027 is not established either, and the v1.261028 AgentCore behaviour is read from names in the binary, never run.
@@ -77,6 +81,21 @@ Reset clears your workspace. Nothing was sent anywhere.
 11. **Denied: the Resource is not a backend the gateway knows.** A resource indicator with no exchange config behind it is refused.
 12. **Denied: the exchange asks for more scope than the caller holds.** An exchange may narrow what the caller holds, never widen it. The caller holds orders:read and orders:write; admin:all is not among them.
 13. **Denied: the scope is not one this backend offers.** The caller holds orders:write, but the reports backend offers only reports:read, so a token for it cannot carry orders:write.
+
+## The users-and-groups-from-claims scenarios (simulation; that any claim can name the user or the groups is an owner statement, UNVERIFIED)
+
+1. **Wrong issuer.** The identity trusts one issuer and compares it with iss exactly. A token from another issuer, or the same one spelled differently, is refused before anything else is read.
+2. **Wrong audience.** Privilege generates the Audience when the identity is saved. The token manager must put exactly that value in aud. Putting the agent app URL there instead is the usual slip.
+3. **Lifetime too long.** exp minus iat is 7200 seconds and the identity allows 900. The cap exists because a workload that signs its own tokens chooses its own exp.
+4. **act emitted as the text "{}".** The trap: the PingFederate mapping produced the text "{}" instead of an object, so act.sub does not exist and the required claim fails. The fix is the token manager's mapping, not the identity.
+5. **Required claim typed as the audience.** The token is right and the identity is wrong: its required claim act.sub was typed as the audience instead of the agent id. The same log line as the "{}" trap, so always read which claim it names.
+6. **Signing key not published.** The token manager signed with a key that is not in the issuer's published keys (PingFederate's centralized signing key). The gateway refreshed the keys and still refused. Use a per-manager key with Publish Keys on.
+7. **Opaque user, allowed.** sam-rivera is in no directory and is registered nowhere. Opaque only records the name, so the call goes through. What the agent may do comes from the token's claims: here the admin role opens every tool.
+8. **Resolved user in a directory group, allowed.** ana-lopez is a Privilege user, so she is found and her DIRECTORY groups apply (Cedar group rules, per-user rules). The tools still come from the TOKEN, not the directory. The readers group opens three. Two sources, two jobs.
+9. **Resolved, but the user is not in the directory.** The same token as the Opaque run, one setting changed. Resolved needs sam-rivera to be a Privilege user, and she is not: refused. (The 403 and the wording are this lab's.)
+10. **Subject pinned while the End-user claim reads sub.** The console refuses to save this identity: pinning Subject to one value while the End-user claim reads sub would make every caller the same end user. Widen Subject to * and pin the agent with a required claim instead.
+11. **Tier by group: fewer tools.** The token carries the readers group and no admin role. Only the Reader tier matches, so three tools are granted, not nine.
+12. **No matching tier: 403.** The token is valid and the person is recorded, but no tier names this group. A conditioned tier never falls back to all tools, so the caller gets a bare 403.
 
 ## The AgentCore console walkthroughs (Ping release claim, UNVERIFIED on our tenant)
 

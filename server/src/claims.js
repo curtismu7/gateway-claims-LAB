@@ -5,7 +5,7 @@
 import { maskKeepShape } from './credentials.js';
 
 export const LIMITS = { name: 64, depth: 6, keys: 200, string: 512, required: 8, arrayItems: 20 };
-const PATH_RE = /^[A-Za-z_][A-Za-z0-9_-]{0,31}(\.[A-Za-z0-9_-]{1,32}){0,5}$/;
+export const PATH_RE = /^[A-Za-z_][A-Za-z0-9_-]{0,31}(\.[A-Za-z0-9_-]{1,32}){0,5}$/;
 
 export class ClaimsInputError extends Error {
   constructor(code, detail) { super(detail); this.code = code; }

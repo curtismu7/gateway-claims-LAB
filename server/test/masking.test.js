@@ -62,6 +62,16 @@ const place = (url, ws, s) => {
     ['POST', '/api/agentcore-console/act', { kind: 'set-waf', mode: 'fail-closed', [s]: 1 }], ['POST', '/api/agentcore-console/act', { kind: 'set-waf', mode: 'fail-closed', vertical: s }],
     ['POST', '/api/agentcore-console/probe', { kind: s }], ['POST', '/api/agentcore-console/probe', { kind: 'gateway-call', principal: s, target: 'tg-1' }], ['POST', '/api/agentcore-console/probe', { kind: 'gateway-call', principal: 'role-lab-batch-job', target: s }],
     ['POST', '/api/agentcore-console/probe', { kind: 'direct-runtime', principal: 'role-lab-batch-job', runtime: s }], ['POST', '/api/agentcore-console/probe', { kind: 'waf-outage', [s]: 1 }],
+    // Users and groups from claims: every typed field, claim name and value, scenario id, unknown key, query, path, header and malformed body
+    ['POST', '/api/claims-users/evaluate', { scenario: s }], ['POST', '/api/claims-users/evaluate', { scenario: 'wrong-iss', kid: s }], ['POST', '/api/claims-users/evaluate', { scenario: 'wrong-iss', subject: s }],
+    ['POST', '/api/claims-users/evaluate', { scenario: 'wrong-iss', endUserClaim: s }], ['POST', '/api/claims-users/evaluate', { scenario: 'wrong-iss', endUserMode: s }], ['POST', '/api/claims-users/evaluate', { scenario: 'wrong-iss', vertical: s }],
+    ['POST', '/api/claims-users/evaluate', { scenario: 'wrong-iss', [s]: 1 }], ['POST', '/api/claims-users/evaluate', { token: { [s]: 'x' } }], ['POST', '/api/claims-users/evaluate', { token: { a: { [s]: s } } }], ['POST', '/api/claims-users/evaluate', { token: s }],
+    ['POST', '/api/claims-users/evaluate', { token: { iss: s, aud: s, sub: s, act: { sub: s }, client_id: s, groups: [s, s], scope: s, iat: s, exp: s } }], ['POST', '/api/claims-users/evaluate', { token: { iss: 'https://idp.northwind.example', sub: s, aud: 'priv-nhi-northwind-example', iat: 1, exp: 2 } }],
+    ['POST', '/api/claims-users/evaluate', { token: { iss: 'https://idp.northwind.example', sub: s, aud: 'priv-nhi-northwind-example', client_id: 'orders-agent', act: { sub: 'orders-agent' }, user: { login: s }, iat: 1, exp: 2 }, endUserClaim: 'user.login', endUserMode: 'resolved' }],
+    ['POST', '/api/claims-users/evaluate', { token: { sub: s }, endUserClaim: 'sub', endUserMode: 'resolved', subject: '*' }], ['POST', '/api/claims-users/evaluate', { token: { 'a.b': s } }], ['POST', '/api/claims-users/evaluate', { token: { a: 'x'.repeat(600) + s } }],
+    ['GET', `/api/claims-users?vertical=${enc}`], ['GET', `/api/claims-users/${enc}`], ['POST', `/api/claims-users/evaluate/${enc}`, {}],
+    ['POST', '/api/claims-users/evaluate', { scenario: 'wrong-iss' }, { 'x-workspace': s }], ['POST', '/api/claims-users/evaluate', { scenario: 'wrong-iss' }, { traceparent: s }],
+    ['POST', '/api/claims-users/evaluate', undefined, {}, `{"scenario":"wrong-iss","token":{"a":"${s.replace(/["\\\n]/g, '')}"`],
     ['GET', `/api/agentcore-console?vertical=${enc}`], ['GET', `/api/obo?vertical=${enc}`], ['GET', `/api/agentcore-console/walkthroughs?vertical=${enc}&x=${enc}`], ['GET', `/api/diagram?vertical=${enc}&name=${enc}`],
     ['GET', `/api/${enc}`], ['POST', `/api/${enc}`, {}], ['GET', `/api/agentcore-console/${enc}`], ['POST', `/api/obo/evaluate/${enc}`, {}], ['PUT', `/${enc}`, {}], ['DELETE', `/zzz/${enc}`, {}], ['POST', `/${enc}/x`, {}],
     ['POST', '/api/obo/evaluate', { scenario: 'allowed' }, { 'x-workspace': s }], ['POST', '/api/agentcore-console/act', { kind: 'set-waf', mode: 'fail-closed' }, { 'x-workspace': s }], ['GET', '/api/agentcore-console', undefined, { 'x-workspace': s }],
@@ -89,11 +99,11 @@ test('typed credential-shaped values never come back: every field, query, path, 
           assert.ok(r.status !== 500, `${m} ${p.slice(0, 40)} gave 500`);
         }
       }
-      assert.ok(hits > 600, `exercised ${hits} requests`);
+      assert.ok(hits > 1000, `exercised ${hits} requests`);
     } finally { process.stdout.write = so; process.stderr.write = se; }
     // The state afterwards: the console views of every workspace used, the runs, and the walkthrough table.
     for (const ws of ['mask-w', 'default']) {
-      const views = [await call(url, 'GET', '/api/agentcore-console', undefined, { ws }), await call(url, 'GET', '/api/runs', undefined, { ws }), await call(url, 'GET', '/api/obo', undefined, { ws })];
+      const views = [await call(url, 'GET', '/api/agentcore-console', undefined, { ws }), await call(url, 'GET', '/api/runs', undefined, { ws }), await call(url, 'GET', '/api/obo', undefined, { ws }), await call(url, 'GET', '/api/claims-users', undefined, { ws })];
       for (const v of views) for (const s of SECRETS) assert.ok(!v.text.includes(needleOf(s)), `state holds a secret from ${s.slice(0, 20)}`);
     }
   });
@@ -109,16 +119,22 @@ test('a credential typed as a confirmation, scope or endpoint is REFUSED (not st
       assert.equal(o.status, 400); assert.ok(['credential_like', 'bad_scope'].includes(o.json.error));
       const c = await call(url, 'POST', '/api/agentcore-console/act', { kind: 'set-enforcement', mode: 'ENFORCE', confirm: s }, { ws: 'mask-r' });
       assert.equal(c.status, 403); assert.equal(c.json.error, 'confirmation_mismatch');
+      for (const field of ['kid', 'subject', 'endUserClaim']) {
+        const u = await call(url, 'POST', '/api/claims-users/evaluate', { scenario: 'wrong-iss', [field]: s }, { ws: 'mask-r' });
+        assert.equal(u.status, 400, field); assert.ok(['credential_like', 'bad_kid', 'bad_subject', 'bad_end_user_claim'].includes(u.json.error), `${field}: ${u.json.error}`); assert.ok(!u.text.includes(N));
+      }
     }
     const v = (await call(url, 'GET', '/api/agentcore-console', undefined, { ws: 'mask-r' })).json;
     assert.equal(v.audit.length, 0); assert.equal(v.gateway.pinnedEndpoint, null); assert.equal(v.gateway.engine.mode, 'LOG_ONLY');
+    const cu = (await call(url, 'GET', '/api/runs', undefined, { ws: 'mask-r' })).json.runs;
+    assert.ok(!cu.some((x) => String(x.scenario).startsWith('claims-users:')), 'a refused request is not recorded');
   });
 });
 
 test('credential-looking workspace ids are refused (400), good ones work, and the id is the only thing the answer repeats', async () => {
   await withServer(async (url) => {
     for (const ws of ['ghp-abcdefghij1234567890', 'a'.repeat(40), '0123456789abcdef0123456789abcdef01234567', 'sk-abcdefghijklmnop12', 'password-is-hunter22']) {
-      for (const [m, p, b] of [['GET', '/api/agentcore-console'], ['POST', '/api/obo/evaluate', { scenario: 'allowed' }], ['POST', '/api/evaluate', { scenario: 'allowed' }], ['GET', '/api/runs']]) {
+      for (const [m, p, b] of [['GET', '/api/agentcore-console'], ['POST', '/api/obo/evaluate', { scenario: 'allowed' }], ['POST', '/api/claims-users/evaluate', { scenario: 'wrong-iss' }], ['POST', '/api/evaluate', { scenario: 'allowed' }], ['GET', '/api/runs']]) {
         const r = await call(url, m, p, b, { ws }); assert.equal(r.status, 400, `${ws} ${p}`); assert.deepEqual(r.json, { error: 'bad_workspace' });
       }
     }

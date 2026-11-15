@@ -136,7 +136,7 @@ test('the response mask covers a value the visitor never typed: a secret-looking
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gcl-m-')), 'customer.config.json');
   fs.writeFileSync(file, JSON.stringify({ cast: { brand: `my password is ${N}` } }));
   await withServer(async (url) => {
-    for (const p of ['/api/scenarios', '/api/scope-gate', '/api/diagram', '/api/diagram?name=scope-gate', '/api/diagram?name=obo', '/api/obo', '/api/agentcore-console']) {
+    for (const p of ['/api/scenarios', '/api/scope-gate', '/api/diagram', '/api/diagram?name=scope-gate', '/api/diagram?name=obo', '/api/obo', '/api/agentcore-console', '/api/claims-users']) {
       const r = await call(url, 'GET', p);
       assert.equal(r.status, 200, p);
       assert.ok(!r.text.includes(N), `${p} shows the brand unmasked`);

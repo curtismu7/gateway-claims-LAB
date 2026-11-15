@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { visible } from "./safeText";
 import userEvent from "@testing-library/user-event";
 import App, { BANNER_UNKNOWN } from "./App";
@@ -16,7 +16,7 @@ const STORY = {
   rule: { name: "Registered agent only (mock)", appliesTo: "P1 Privilege Agent App", note: "n", requiredClaims: [{ path: "client_id", equals: "a" }, { path: "act.sub", equals: "a" }] },
   scenarios: SCEN, cast: { castAgentId: "a" },
   facts: [{ id: "nested-match-new", status: "UNVERIFIED", text: "Nested matching is new.", source: "inference" }, { id: "x", status: "measured", text: "Seen.", source: "recipe" }],
-  talkTrack: [{ id: "say-first", title: "Say first", say: "Everything is simulated." }, { id: "gate", title: "Gate", say: "Walk it." }, { id: "obo", title: "On-behalf-of", say: "Ping release claim, UNVERIFIED on our tenant. Swap the token." }, { id: "why-obo", title: "Why it matters: OBO (Ping claims)", say: "Per Ping's deck, slide 48." }, { id: "console", title: "Console", say: "Change the gateway." }, { id: "why-console", title: "Why it matters: console (Ping claims)", say: "Per Ping's deck, slide 45." }, { id: "posture", title: "Posture", say: "Shape only." }],
+  talkTrack: [{ id: "say-first", title: "Say first", say: "Everything is simulated." }, { id: "gate", title: "Gate", say: "Walk it." }, { id: "obo", title: "On-behalf-of", say: "Ping release claim, UNVERIFIED on our tenant. Swap the token." }, { id: "why-obo", title: "Why it matters: OBO (Ping claims)", say: "Per Ping's deck, slide 48." }, { id: "console", title: "Console", say: "Change the gateway." }, { id: "why-console", title: "Why it matters: console (Ping claims)", say: "Per Ping's deck, slide 45." }, { id: "claims-users", title: "Users and groups from claims", say: "Simulation, mock only. Read the claims." }, { id: "posture", title: "Posture", say: "Shape only." }],
 };
 const LATEST = {
   title: "Gateway v1.261029 and v1.261030", intro: "Intro.", banner: "Lab reading, UNVERIFIED: read from binaries, never run.", releaseDate: "2026-11-02",
@@ -129,6 +129,48 @@ function consoleServer(url, opts) {
   return json({ kind: b.kind, ...extra, scorecardChange: { before, after: score().greenCount, total: 3 }, hops: [{ n: 1, request: "POST https://control.example/x", response: "HTTP/1.1 200 OK" }], ...view() });
 }
 
+// ---- Users and groups from claims: a small fake of the engine's answers ----
+const CU_ORDER = ["identity_saved", "issuer", "signing_key", "audience", "lifetime", "subject", "required_claims", "end_user", "grant_tier"];
+const CU_STEP_TAGS = ["measured", "reading", "measured", "reading", "reading", "reading", "measured", "reading", "unverified"];
+const CU_TAGS = { ...TAGS, unverified: "UNVERIFIED" };
+const cuScenario = (id, title, evidence, extra = {}) => ({ id, title, evidence, lesson: `Lesson of ${id}.`, token: { kid: "atm-agent-key", claims: { iss: "https://idp.example", sub: "sam-rivera", groups: ["northwind-readers"] } }, ...extra });
+const CU_STORY = {
+  title: "Users and groups from claims: Northwind", intro: "Run twelve mock tokens.", banner: "SIMULATION, mock only: the tokens are invented.", sibling: "Its sibling lab teaches the opposite route: registering people in PingOne.",
+  noLive: "Mock only: this app has no Live engine (it refuses GCLAB_MODE=live). Nothing here calls a gateway.", tags: CU_TAGS, simulated: true, limits: { subject: 64, kid: 64 },
+  identity: { publishedKeys: ["atm-agent-key"] }, defaults: { kid: "atm-agent-key", subject: "*", endUserClaim: "sub", endUserMode: "opaque" },
+  identityRows: [{ id: "issuer", field: "Issuer", tag: "swagger", note: "Exact match.", value: "https://idp.example", changed: false }, { id: "subject", field: "Subject", tag: "swagger", note: "Wildcards.", value: "*", changed: false }],
+  directory: [{ user: "ana-lopez", groups: ["northwind-team"] }],
+  tools: ["ListItems", "GetItem", "CountItems", "CreateItem"],
+  tiers: [{ id: "read", label: "Reader tier", claims: [{ path: "groups", anyOf: ["northwind-readers", "northwind-support"] }], tools: ["ListItems", "GetItem", "CountItems"] }, { id: "admin", label: "Admin tier", claims: [{ path: "realm_access.roles", anyOf: ["northwind-admin"] }], tools: ["ListItems", "GetItem", "CountItems", "CreateItem"] }],
+  checks: CU_ORDER.map((id, i) => ({ id, tag: CU_STEP_TAGS[i], label: `Step ${i + 1}` })),
+  sections: [
+    { id: "gate", title: "A. The identity gate", intro: "Gate intro.", scenarios: [cuScenario("wrong-iss", "Wrong issuer", "reading"), cuScenario("key-unpublished", "Signing key not published", "measured")] },
+    { id: "end-user", title: "B. The end user: Opaque or Resolved", intro: "End user intro.", scenarios: [cuScenario("opaque-allowed", "Opaque user, allowed", "unverified"), cuScenario("resolved-missing", "Resolved, but the user is not in the directory", "invented", { identity: { endUser: { mode: "resolved", claim: "sub" } } })] },
+    { id: "tiers", title: "C. Claim-conditioned grant tiers", intro: "Tiers intro.", scenarios: [cuScenario("tier-fewer", "Tier by group: fewer tools", "unverified")] },
+  ],
+  routes: { rows: [{ id: "who", question: "Who is the end user?", register: "A Privilege user.", claims: "Whoever the End-user claim names.", tag: "reading" }, { id: "groups", question: "Where do the groups come from?", register: "The directory.", claims: "The token.", tag: "unverified" }], when: { register: ["You need Resolved behaviour."], claims: ["The token already carries the person."] } },
+  cedar: { policy: "forbid (principal, action, resource);", facts: [{ id: "cedar-no-groups", tag: "measured", text: "No raw groups claim in the editor.", source: "console editor" }] },
+  facts: [{ id: "any-claim", tag: "unverified", text: "Any claim can name the user: the owner's statement.", source: "owner statement, 2026-11-15, not measured" }, { id: "act-object", tag: "measured", text: "act must be an object.", source: "owner live run" }],
+};
+function cuRun(b) {
+  const id = b.scenario || "custom";
+  const failAt = id === "wrong-iss" ? 1 : id === "key-unpublished" ? 2 : id === "resolved-missing" || (id === "opaque-allowed" && b.endUserMode === "resolved") ? 7 : null;
+  const checks = CU_ORDER.map((c, i) => ({ id: c, label: `Step ${i + 1}`, tag: CU_STEP_TAGS[i], ok: failAt === null || i < failAt ? true : i === failAt ? false : null, detail: i === failAt ? `${c} was refused here` : i < (failAt ?? 99) ? `${c} passed here` : "not reached" }));
+  const allow = failAt === null;
+  const reached = failAt === null || failAt === 7;
+  return {
+    scenario: id, custom: Boolean(b.token || b.endUserMode), expected: b.token ? null : failAt === null ? "allow" : "deny", expectedCode: null, decision: allow ? "allow" : "deny", status: allow ? 200 : 401, code: allow ? null : "refused_here", stage: "gateway",
+    checks, claimChecks: [], log: allow ? ["mcpgw: workload token accepted for key orders-agent-key", "tools/list returned 3 tools"] : ["mcpgw: workload token rejected: something"],
+    flat: [{ path: "groups.0", value: "northwind-readers" }, { path: "sub", value: "sam-rivera" }],
+    endUser: reached ? { mode: b.endUserMode || (id === "resolved-missing" ? "resolved" : "opaque"), claim: b.endUserClaim || "sub", value: "sam-rivera", resolved: failAt === 7 ? false : null, directoryGroups: null, cedarGroupRulesApply: false } : null,
+    tiers: allow ? [{ id: "read", label: "Reader tier", ok: true, tools: ["ListItems"], claims: [{ path: "groups", anyOf: ["northwind-readers"], found: ["northwind-readers"], matched: "northwind-readers", ok: true }] }, { id: "admin", label: "Admin tier", ok: false, tools: ["ListItems"], claims: [{ path: "realm_access.roles", anyOf: ["northwind-admin"], found: [], matched: null, ok: false }] }] : null,
+    tools: allow ? ["ListItems", "GetItem", "CountItems"] : [], toolCount: allow ? 3 : 0,
+    token: b.token ? null : { header: { alg: "RS256", typ: "at+jwt", kid: "atm-agent-key" }, claims: { iss: "https://idp.example", sub: "sam-rivera", groups: ["northwind-readers"] }, signature: "<MOCK-SIGNATURE: not a real signature>" },
+    identityView: [{ id: "issuer", field: "Issuer", tag: "swagger", note: "Exact match.", value: "https://idp.example", changed: false }, { id: "subject", field: "Subject", tag: "swagger", note: "Wildcards.", value: b.subject || "*", changed: Boolean(b.subject) }],
+    hops: [hop(1), hop(2), hop(3)], traceId: "a".repeat(32), traceparent: `00-${"a".repeat(32)}-${"1".repeat(16)}-01`, workspace: "w", simulated: true,
+  };
+}
+
 let calls;
 let override = {};
 function mockFetch() {
@@ -146,6 +188,13 @@ function mockFetch() {
     if (url === "/api/scope-gate/evaluate") { const b = JSON.parse(opts.body); if (/ghp_/.test(b.scope || "")) return json({ error: "credential_like", detail: "that text looks like a credential, so it was not used" }, 400); return b.scenario === "bad" ? json({ error: "too_long", detail: "scope is longer than 256" }, 400) : json(scopeResult(b.scenario, b.scope, b.scope)); }
     if (url === "/api/agentcore") return json(AGC);
     if (url === "/api/agentcore/evaluate") return json(agcResult(JSON.parse(opts.body).scenario));
+    if (url.startsWith("/api/claims-users")) {
+      if (override.cu) return override.cu(url, opts);
+      if (url !== "/api/claims-users/evaluate") return json(CU_STORY);
+      const b = JSON.parse(opts.body);
+      if (b.kid === "bad kid") return json({ error: "bad_kid", detail: "that value has a character the lab does not take" }, 400);
+      return json(cuRun(b));
+    }
     if (url.startsWith("/api/obo")) { if (override.obo) return override.obo(url, opts); return url === "/api/obo/evaluate" ? json(oboRun(JSON.parse(opts.body).scenario, JSON.parse(opts.body))) : json(OBO_STORY); }
     if (url.startsWith("/api/agentcore-console")) return consoleServer(url, opts);
     if (url === "/api/shelf") return json({ shelfUrl: "https://shelf.example:8443" });
@@ -191,7 +240,7 @@ describe("shell", () => {
 describe("Mock | Live toggle (every page)", () => {
   it("is in the header on every tab; Mock is pressed; Live is refused with the server's honest message and the page stays in mock", async () => {
     await ready();
-    for (const name of ["Nested-claim gate", "v1.261029 + v1.261030", "On-behalf-of", "AgentCore console", "AgentCore posture", "Diagram", "Talk track"]) {
+    for (const name of ["Nested-claim gate", "Users and groups from claims", "v1.261029 + v1.261030", "On-behalf-of", "AgentCore console", "AgentCore posture", "Diagram", "Talk track"]) {
       await userEvent.click(screen.getByRole("tab", { name }));
       expect(screen.getByTestId("top-menu")).toBeVisible();
       expect(screen.getByTestId("mode-select")).toHaveValue("mock");
@@ -364,7 +413,7 @@ describe("diagram edge labels", () => {
 describe("banner visibility on every tab and in presenter mode", () => {
   it("is visible (not hidden, not display:none) on every tab and in presenter mode", async () => {
     await ready();
-    for (const name of ["Nested-claim gate", "v1.261029 + v1.261030", "AgentCore posture", "Diagram", "Talk track"]) {
+    for (const name of ["Nested-claim gate", "Users and groups from claims", "v1.261029 + v1.261030", "AgentCore posture", "Diagram", "Talk track"]) {
       await userEvent.click(screen.getByRole("tab", { name }));
       expect(screen.getByTestId("banner")).toBeVisible();
       expect(screen.getByTestId("banner")).not.toHaveAttribute("hidden");
@@ -509,7 +558,7 @@ describe("v1.261028 AgentCore tab", () => {
 const RELEASE_WORDS = /^Ping release claim, UNVERIFIED on our tenant/;
 const openTab = async (name) => { await userEvent.click(screen.getByRole("tab", { name })); };
 const pickVertical = async (v) => { await userEvent.selectOptions(screen.getByLabelText(/Vertical/), v); };
-const ALL_TABS = ["Nested-claim gate", "v1.261027 scope gates", "v1.261028 AgentCore", "v1.261029 + v1.261030", "On-behalf-of", "AgentCore console", "AgentCore posture", "Diagram", "Talk track"];
+const ALL_TABS = ["Nested-claim gate", "Users and groups from claims", "v1.261027 scope gates", "v1.261028 AgentCore", "v1.261029 + v1.261030", "On-behalf-of", "AgentCore console", "AgentCore posture", "Diagram", "Talk track"];
 
 describe("release tabs: banner, mode and presenter", () => {
   it("both new tabs are in the strip and show the release banner (and the mock-only line) on top of the simulation banner", async () => {
@@ -762,5 +811,138 @@ describe("AgentCore console tab", () => {
     await waitFor(() => expect(screen.getByTestId("gc-green")).toHaveTextContent("0 of 3"));
     await pickVertical("health");
     await waitFor(() => expect(calls.some((x) => /agentcore-console\?vertical=health/.test(x.url))).toBe(true));
+  });
+});
+
+describe("users and groups from claims tab", () => {
+  const openCu = async () => { await ready(); await openTab("Users and groups from claims"); await screen.findByTestId("cu-verdict"); };
+  it("is in the strip, says plainly it is a simulation (also while loading and in presenter mode), and keeps the header, mode and Mock | Live toggle", async () => {
+    override.cu = () => new Promise(() => {});
+    await ready(); await openTab("Users and groups from claims");
+    expect(screen.getByTestId("cu-banner")).toHaveTextContent(/^SIMULATION, mock only/);
+    expect(screen.getByTestId("cu-banner")).toHaveTextContent("UNVERIFIED");
+    expect(screen.getByTestId("cu-banner")).toBeVisible();
+    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Users and groups from claims" })).toHaveAttribute("aria-selected", "true");
+    override.cu = undefined;
+    await openTab("Nested-claim gate"); await openTab("Users and groups from claims");
+    await screen.findByTestId("cu-verdict");
+    expect(screen.getByTestId("cu-no-live")).toHaveTextContent("no Live engine");
+    expect(screen.getByTestId("banner")).toHaveTextContent(/^SIMULATED, MOCK mode/);
+    expect(screen.getByTestId("mode")).toHaveTextContent("Mode: mock (no Live engine)");
+    expect(screen.getByTestId("mode-select")).toHaveValue("mock");
+    expect(screen.getByTestId("mode-select").querySelector('option[value="real"]')).toBeDisabled();
+    await userEvent.keyboard("p");
+    expect(await screen.findByTestId("presenter-say")).toHaveTextContent("Read the claims.");
+    expect(screen.getByTestId("cu-banner")).toBeVisible(); expect(screen.getByTestId("banner")).toBeVisible();
+    await userEvent.keyboard("{Escape}");
+  });
+  it("lists the scenarios in three sections and runs the first one on open, with the checks in order and the reason of each", async () => {
+    await openCu();
+    for (const [sec, n] of [["gate", 2], ["end-user", 2], ["tiers", 1]]) expect(within(screen.getByTestId(`cu-section-${sec}`)).getAllByRole("button")).toHaveLength(n);
+    expect(screen.getByRole("button", { name: "Wrong issuer" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("cu-lesson")).toHaveTextContent("Lesson of wrong-iss.");
+    expect(screen.getByTestId("cu-verdict")).toHaveTextContent("DENY");
+    expect(screen.getByTestId("cu-verdict")).toHaveTextContent("HTTP 401, refused_here");
+    const items = within(screen.getByTestId("cu-checks")).getAllByRole("listitem");
+    expect(items.map((li) => li.getAttribute("data-check"))).toEqual(CU_ORDER);
+    expect(items[0]).toHaveTextContent("passed"); expect(items[1]).toHaveTextContent("refused"); expect(items[1]).toHaveTextContent("issuer was refused here"); expect(items[2]).toHaveTextContent("not reached");
+    expect(screen.getByTestId("cu-log")).toHaveTextContent("workload token rejected");
+    expect(screen.getByTestId("hops")).toBeInTheDocument();
+    const ev = calls.filter((c) => c.url === "/api/claims-users/evaluate");
+    expect(JSON.parse(ev[0].opts.body)).toEqual({ scenario: "wrong-iss", vertical: "retail" });
+    expect(ev[0].opts.headers["x-workspace"]).toMatch(/^[a-z0-9-]{1,40}$/);
+  });
+  it("another scenario runs and shows the tiers, the granted tools and the end user; a refused end-user step shows the person looked up and not found", async () => {
+    await openCu();
+    await userEvent.click(screen.getByRole("button", { name: "Opaque user, allowed" }));
+    await waitFor(() => expect(screen.getByTestId("cu-verdict")).toHaveTextContent("ALLOW"));
+    expect(screen.getByTestId("cu-tool-count")).toHaveTextContent("3 of 4 tools granted");
+    const tiers = within(screen.getByTestId("cu-tiers"));
+    expect(tiers.getByText("Reader tier")).toBeInTheDocument(); expect(tiers.getByText("matched")).toBeInTheDocument(); expect(tiers.getByText("no match")).toBeInTheDocument();
+    expect(tiers.getAllByText("realm_access.roles").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("cu-tools").querySelectorAll('[data-granted="true"]')).toHaveLength(3);
+    expect(screen.getByTestId("cu-tools").querySelectorAll('[data-granted="false"]')).toHaveLength(1);
+    expect(screen.getByTestId("cu-enduser")).toHaveTextContent("No: Opaque never looks the person up");
+    expect(screen.getByTestId("cu-enduser")).toHaveTextContent("do not apply");
+    await userEvent.click(screen.getByRole("button", { name: /Resolved, but the user is not in the directory/ }));
+    await waitFor(() => expect(screen.getByTestId("cu-verdict")).toHaveTextContent("DENY"));
+    expect(screen.getByTestId("cu-enduser")).toHaveTextContent("Yes: not found");
+    expect(screen.getByTestId("cu-tool-count")).toHaveTextContent("No tool is granted.");
+    expect(within(screen.getByTestId("cu-tiers")).getAllByText("not reached").length).toBe(2);
+  });
+  it("the end-user setting is a one-setting change: the same token is sent again with the setting the visitor picked", async () => {
+    await openCu();
+    await userEvent.click(screen.getByRole("button", { name: "Opaque user, allowed" }));
+    await waitFor(() => expect(screen.getByTestId("cu-verdict")).toHaveTextContent("ALLOW"));
+    await userEvent.selectOptions(screen.getByLabelText("End-user setting for this run"), "resolved");
+    await waitFor(() => expect(screen.getByTestId("cu-verdict")).toHaveTextContent("DENY"));
+    const last = JSON.parse(calls.filter((c) => c.url === "/api/claims-users/evaluate").at(-1).opts.body);
+    expect(last).toEqual({ scenario: "opaque-allowed", vertical: "retail", endUserMode: "resolved" });
+    await userEvent.click(screen.getByTestId("reset"));
+    await waitFor(() => expect(screen.getByTestId("cu-verdict")).toHaveTextContent("ALLOW"));
+    expect(screen.getByLabelText("End-user setting for this run")).toHaveValue("");
+  });
+  it("every row is tagged: measured, reading, swagger, unverified and invented chips are shown, with the UNVERIFIED label for the owner statement", async () => {
+    await openCu();
+    expect(screen.getByTestId("tag-legend")).toHaveTextContent("UNVERIFIED");
+    const checks = within(screen.getByTestId("cu-checks"));
+    expect(checks.getAllByText("measured (our note)").length).toBe(3); expect(checks.getAllByText("lab reading").length).toBe(5); expect(checks.getAllByText("UNVERIFIED").length).toBe(1);
+    expect(within(screen.getByTestId("cu-identity")).getAllByText("console swagger name (schema only)").length).toBe(2);
+    const facts = within(screen.getByTestId("cu-facts"));
+    expect(facts.getByText("UNVERIFIED")).toHaveAttribute("data-tag", "unverified");
+    expect(screen.getByTestId("cu-facts")).toHaveTextContent("owner statement, 2026-11-15, not measured");
+    expect(within(screen.getByTestId("cu-route-rows")).getAllByText("lab reading").length).toBe(1);
+    expect(screen.getByTestId("cu-cedar-facts")).toHaveTextContent("measured (our note)");
+    await userEvent.click(screen.getByRole("button", { name: "Resolved, but the user is not in the directory" }));
+    await waitFor(() => expect(screen.getByTestId("cu-lesson").parentElement).toHaveTextContent("lab-invented"));
+  });
+  it("compares the two routes, says when each applies, and shows the Cedar point", async () => {
+    await openCu();
+    const routes = screen.getByTestId("cu-routes");
+    expect(routes).toHaveTextContent("Its sibling lab teaches the opposite route: registering people in PingOne.");
+    expect(screen.getByTestId("cu-route-rows")).toHaveTextContent("Register in PingOne"); expect(screen.getByTestId("cu-route-rows")).toHaveTextContent("Claims");
+    expect(screen.getByTestId("cu-when")).toHaveTextContent("You need Resolved behaviour."); expect(screen.getByTestId("cu-when")).toHaveTextContent("The token already carries the person.");
+    expect(screen.getByTestId("cu-cedar")).toHaveTextContent("forbid (principal");
+    expect(screen.getByTestId("cu-directory")).toHaveTextContent("ana-lopez");
+  });
+  it("the custom editor sends the claims and the three settings, shows the answer without repeating a typed token, and shows a refusal in words", async () => {
+    await openCu();
+    const area = screen.getByLabelText("Token claims (JSON)");
+    expect(area.value).toContain('"sam-rivera"');
+    await userEvent.clear(screen.getByLabelText(/Subject \(use/)); await userEvent.type(screen.getByLabelText(/Subject \(use/), "sam-*");
+    await userEvent.selectOptions(screen.getByLabelText("End user"), "resolved");
+    await userEvent.click(screen.getByRole("button", { name: "Evaluate custom" }));
+    await screen.findByTestId("cu-typed-note");
+    const sent = JSON.parse(calls.filter((c) => c.url === "/api/claims-users/evaluate").at(-1).opts.body);
+    expect(sent).toMatchObject({ vertical: "retail", kid: "atm-agent-key", subject: "sam-*", endUserClaim: "sub", endUserMode: "resolved" });
+    expect(sent.token.sub).toBe("sam-rivera"); expect(sent.scenario).toBeUndefined();
+    expect(within(screen.getByTestId("flat-table")).getByText("groups.0")).toBeInTheDocument();
+    expect(screen.getByTestId("cu-identity")).toHaveTextContent("changed in this run");
+    await userEvent.clear(screen.getByLabelText(/Signing key id/)); await userEvent.type(screen.getByLabelText(/Signing key id/), "bad kid");
+    await userEvent.click(screen.getByRole("button", { name: "Evaluate custom" }));
+    expect(await screen.findByTestId("cu-custom-error")).toHaveTextContent("bad_kid: that value has a character the lab does not take");
+    fireEvent.change(screen.getByLabelText("Token claims (JSON)"), { target: { value: "{not json" } });
+    await userEvent.click(screen.getByRole("button", { name: "Evaluate custom" }));
+    expect(screen.getByTestId("cu-custom-error")).toHaveTextContent("Token claims are not valid JSON.");
+  });
+  it("a server failure is shown as text and the tab strip stays; an unreadable story is a notice, not a blank page", async () => {
+    await ready(); await openTab("Users and groups from claims"); await screen.findByTestId("cu-verdict");
+    override.cu = async (url) => (url === "/api/claims-users/evaluate" ? { ok: false, status: 500, json: async () => ({ error: "internal_error" }) } : { ok: true, status: 200, json: async () => CU_STORY });
+    await userEvent.click(screen.getByRole("button", { name: "Signing key not published" }));
+    expect(await screen.findByTestId("cu-fail")).toHaveTextContent("Could not evaluate (internal_error)");
+    expect(screen.getByRole("tablist")).toBeInTheDocument();
+    override.cu = async () => ({ ok: false, status: 500, json: async () => ({}) });
+    await pickVertical("health");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load the users and groups from claims tab");
+    expect(screen.getByTestId("cu-banner")).toBeVisible();
+  });
+  it("opens from the content-pack link /#claimsusers and reloads for another vertical", async () => {
+    window.location.hash = "#claimsusers"; render(<App />);
+    expect(await screen.findByTestId("cu-tab")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Users and groups from claims" })).toHaveAttribute("aria-selected", "true");
+    await pickVertical("health");
+    await waitFor(() => expect(calls.some((c) => /\/api\/claims-users\?vertical=health/.test(c.url))).toBe(true));
+    await waitFor(() => expect(calls.filter((c) => c.url === "/api/claims-users/evaluate").some((c) => JSON.parse(c.opts.body).vertical === "health")).toBe(true));
   });
 });

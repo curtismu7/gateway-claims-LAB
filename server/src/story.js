@@ -3,6 +3,7 @@ import { WALKTHROUGHS } from './consoleScenarios.js';
 import { OBO_SCENARIOS } from './oboData.js';
 import { NOT_MEASURED } from './latestData.js';
 import { BANNER, FACTS, INTRO, RULE, SCENARIOS, TALK_TRACK, TITLE } from './claimsData.js';
+import { CU_SECTIONS } from './claimsUsersData.js';
 
 export const rawStory = () => ({ title: TITLE, intro: INTRO, banner: BANNER, rule: RULE, scenarios: SCENARIOS, facts: FACTS, talkTrack: TALK_TRACK });
 
@@ -31,6 +32,8 @@ export function renderTalkTrackMarkdown(cast) {
   s.scenarios.forEach((sc, i) => parts.push(`${i + 1}. **${sc.title}.** ${sc.lesson}`));
   parts.push('', '## The on-behalf-of scenarios (Ping release claim, UNVERIFIED on our tenant)', '');
   fillDeep(OBO_SCENARIOS, cast).forEach((sc, i) => parts.push(`${i + 1}. **${sc.title}.** ${sc.lesson}`));
+  parts.push('', '## The users-and-groups-from-claims scenarios (simulation; that any claim can name the user or the groups is an owner statement, UNVERIFIED)', '');
+  fillDeep(CU_SECTIONS, cast).flatMap((sec) => sec.scenarios).forEach((sc, i) => parts.push(`${i + 1}. **${sc.title}.** ${sc.lesson}`));
   parts.push('', '## The AgentCore console walkthroughs (Ping release claim, UNVERIFIED on our tenant)', '');
   WALKTHROUGHS.forEach((w, i) => parts.push(`${i + 1}. **${w.title}.** ${w.say}`));
   parts.push('', '## The 2026-11-02 release features we have not measured (Ping claims, UNVERIFIED on our tenant)', '');

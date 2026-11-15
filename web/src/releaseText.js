@@ -2,3 +2,5 @@
 export const RELEASE_BANNER = 'Ping release claim, UNVERIFIED on our tenant: from the deck "ID4AI Workforce - H2 2026" (release dated 2026-11-02). The release is not on our tenant; what this tab does is the lab\'s own model, not measured on a real gateway.';
 export const NO_LIVE = 'Mock only: this app has no Live engine (it refuses GCLAB_MODE=live). Nothing here calls a gateway, an issuer or a cloud account.';
 export const TAG_LABELS = { deck: 'deck claim', swagger: 'console swagger name (schema only)', reading: 'lab reading', invented: 'lab-invented', measured: 'measured (our note)' };
+// The words on the users-and-groups-from-claims tab, also before the server has answered. A repo test pins this to the server's CU_BANNER.
+export const CLAIMS_USERS_BANNER = 'SIMULATION, mock only: the tokens, the identity, the directory and the tiers on this tab are invented by this lab, and nothing calls Privilege, an identity provider or a tenant. That Privilege can take the user and the groups from ANY claim is the owner\'s statement of 2026-11-15, not measured: UNVERIFIED.';

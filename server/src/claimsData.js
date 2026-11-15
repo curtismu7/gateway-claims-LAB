@@ -8,6 +8,7 @@ import { OBO_TALK } from './oboData.js';
 import { CONSOLE_TALK } from './consoleData.js';
 import { whyTalk } from './releaseClaims.js';
 import { LATEST_TALK } from './latestData.js';
+import { CU_TALK } from './claimsUsersData.js';
 
 export const BANNER = 'SIMULATED, MOCK mode: a mock PingFederate-style token and a mock Privilege rule. Nothing here calls a real gateway, identity provider or tenant.';
 
@@ -65,6 +66,7 @@ export const TALK_TRACK = [
   whyTalk('obo'),
   CONSOLE_TALK,
   whyTalk('console'),
+  CU_TALK,
   { id: 'unverified', title: 'What we do not claim', say: 'That nested matching is NEW in gateway v1.261024 is our inference from binary symbols. It is UNVERIFIED. Which of the scope behaviours first appeared in v1.261027 is not established either, and the v1.261028 AgentCore behaviour is read from names in the binary, never run.' },
   { id: 'posture', title: 'AgentCore gateway posture', say: 'Shape only - field values invented - UNVERIFIED against the real product. These are the questions a posture view answers; we do not claim the real product answers them this way.' },
   { id: 'close', title: 'Close', say: 'Reset clears your workspace. Nothing was sent anywhere.' },

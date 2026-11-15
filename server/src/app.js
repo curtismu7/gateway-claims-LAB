@@ -23,6 +23,7 @@ import { buildHops, newTrace } from './trace.js';
 import { createWorkspaces, workspaceFrom } from './workspaces.js';
 import { createConsoleStore } from './consoleStore.js';
 import { createReleaseRouter } from './releaseRoutes.js';
+import { createClaimsUsersRouter } from './claimsUsersRoutes.js';
 import { maskDeep, maskTypedDeep } from './mask.js';
 import { mountShelfRoute } from './shelfLink.js';
 
@@ -128,6 +129,8 @@ export function createApp({ health = createHealth(), configFile = CONFIG, worksp
   }));
   // The H2 2026 release tabs (on-behalf-of, AgentCore console): see releaseRoutes.js.
   api.use(createReleaseRouter({ castOf: (vertical) => loadCast(configFile, vertical), workspaces, consoles }));
+  // The users-and-groups-from-claims tab: see claimsUsersRoutes.js.
+  api.use(createClaimsUsersRouter({ castOf: (vertical) => loadCast(configFile, vertical), workspaces }));
   api.get('/runs', withWorkspace((ws, _req, res) => res.json(workspaces.runs(ws))));
   // Reset clears this workspace's evaluations only.
   api.post('/reset', withWorkspace((ws, _req, res) => { workspaces.reset(ws); consoles.reset(ws); res.json({ reset: 'ok', workspace: ws }); }));
