@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Verification mark in the header: the shared `VerifyMark` (vendored byte for byte from AI-DEMO-Standalone `shared/verify-mark`, pinned by `web/src/components/VerifyMark.sha256` and `VerifyMark.css.sha256`) shows this lab's own Verified / In progress mark from the demo shelf, inside the top menu beside the Shelf link. It reads the same `GET /api/shelf` call the Shelf link makes, so it shows through the lab-proxy (where that call reaches the shelf) and nothing when the lab is opened on its own port, when the shelf has no mark for it, or when the shelf is unreachable. Tests: a pin test and a header test (web only).
+
 ## Users and groups from claims: review fixes (2026-11-15)
 
 - A custom run and a scenario run no longer overwrite each other: whichever request was sent last wins, and an answer that arrives late for an older request is dropped (it could replace the custom run you had just made).
