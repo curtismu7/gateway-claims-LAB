@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { visible } from "./safeText";
 import userEvent from "@testing-library/user-event";
 import App, { BANNER_UNKNOWN } from "./App";
@@ -925,6 +925,48 @@ describe("users and groups from claims tab", () => {
     fireEvent.change(screen.getByLabelText("Token claims (JSON)"), { target: { value: "{not json" } });
     await userEvent.click(screen.getByRole("button", { name: "Evaluate custom" }));
     expect(screen.getByTestId("cu-custom-error")).toHaveTextContent("Token claims are not valid JSON.");
+  });
+  it("a slow scenario answer does not overwrite a custom run sent after it", async () => {
+    await openCu();
+    let release; const slow = new Promise((r) => { release = r; });
+    // a scenario answer held back, then a custom run that answers first
+    override.cu = async (url, opts) => {
+      if (url !== "/api/claims-users/evaluate") return { ok: true, status: 200, json: async () => CU_STORY };
+      const b = JSON.parse(opts.body);
+      if (b.scenario === "key-unpublished") await slow;
+      return { ok: true, status: 200, json: async () => cuRun(b) };
+    };
+    await userEvent.click(screen.getByRole("button", { name: "Signing key not published" })); // answer held back
+    await userEvent.click(screen.getByRole("button", { name: "Evaluate custom" }));
+    await screen.findByTestId("cu-typed-note");
+    release();
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+    expect(screen.getByTestId("cu-typed-note")).toBeInTheDocument(); // the late scenario answer was dropped
+  });
+  it("a custom answer that lands after the visitor picked another scenario is dropped", async () => {
+    await openCu();
+    let release; const slow = new Promise((r) => { release = r; });
+    override.cu = async (url, opts) => {
+      if (url !== "/api/claims-users/evaluate") return { ok: true, status: 200, json: async () => CU_STORY };
+      const b = JSON.parse(opts.body);
+      if (b.token) await slow;
+      return { ok: true, status: 200, json: async () => cuRun(b) };
+    };
+    await userEvent.click(screen.getByRole("button", { name: "Evaluate custom" })); // held back
+    await userEvent.click(screen.getByRole("button", { name: "Opaque user, allowed" }));
+    await waitFor(() => expect(screen.getByTestId("cu-verdict")).toHaveTextContent("ALLOW"));
+    release();
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+    expect(screen.queryByTestId("cu-typed-note")).toBeNull(); // still the scenario's run, with its token shown
+    expect(screen.getByTestId("cu-claims-json")).toBeInTheDocument();
+  });
+  it("after a custom run the End-user setting for this run shows the setting that run used", async () => {
+    await openCu();
+    expect(screen.getByLabelText("End-user setting for this run")).toHaveValue("");
+    await userEvent.selectOptions(screen.getByLabelText("End user"), "resolved");
+    await userEvent.click(screen.getByRole("button", { name: "Evaluate custom" }));
+    await screen.findByTestId("cu-typed-note");
+    expect(screen.getByLabelText("End-user setting for this run")).toHaveValue("resolved");
   });
   it("a server failure is shown as text and the tab strip stays; an unreadable story is a notice, not a blank page", async () => {
     await ready(); await openTab("Users and groups from claims"); await screen.findByTestId("cu-verdict");
