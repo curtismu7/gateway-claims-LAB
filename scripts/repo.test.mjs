@@ -110,3 +110,12 @@ test('the release banner and the tag labels the page shows are exactly the serve
   const labels = [.../TAG_LABELS = \{([^}]*)\}/.exec(web)[1].matchAll(/(\w+): '([^']*)'/g)].map((m) => m[2]);
   assert.deepEqual(labels, Object.values(server.CLAIM_TAGS));
 });
+
+test('the users-and-groups-from-claims banner the page shows is exactly the server\'s constant, and the tab says so before the server has answered', async () => {
+  const { CU_BANNER } = await import('../server/src/claimsUsersData.js');
+  const web = fs.readFileSync(path.join(root, 'web/src/releaseText.js'), 'utf8');
+  const m = /export const CLAIMS_USERS_BANNER = '((?:[^'\\]|\\.)*)';/.exec(web);
+  assert.ok(m, 'CLAIMS_USERS_BANNER is exported');
+  assert.equal(m[1].replace(/\\'/g, "'"), CU_BANNER);
+  assert.match(fs.readFileSync(path.join(root, 'web/src/App.jsx'), 'utf8'), /data-testid="cu-banner"/);
+});

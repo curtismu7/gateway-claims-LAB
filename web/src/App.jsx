@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ClaimGate from "./components/ClaimGate";
 import ScopeGate from "./components/ScopeGate";
+import ClaimsUsers from "./components/ClaimsUsers";
 import AgentcoreGov from "./components/AgentcoreGov";
 import OnBehalfOf from "./components/OnBehalfOf";
 import AgentcoreConsole from "./components/AgentcoreConsole";
@@ -12,7 +13,7 @@ import TopMenu, { applyFontSize } from "./top-menu/TopMenu";
 import ShelfLink from "./components/ShelfLink";
 import TalkTrack from "./components/TalkTrack";
 import { getJson, postJson, resetWorkspace } from "./api";
-import { NO_LIVE, RELEASE_BANNER } from "./releaseText";
+import { CLAIMS_USERS_BANNER, NO_LIVE, RELEASE_BANNER } from "./releaseText";
 
 const THEME_KEY = "gwcl.theme";
 const THEMES = [["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]];
@@ -23,6 +24,7 @@ function initialTheme() {
 
 export const TABS = [
   { id: "gate", label: "Nested-claim gate" },
+  { id: "claimsusers", label: "Users and groups from claims" },
   { id: "scope", label: "v1.261027 scope gates" },
   { id: "agentcore", label: "v1.261028 AgentCore" },
   { id: "latest", label: "v1.261029 + v1.261030" },
@@ -170,15 +172,17 @@ export default function App() {
         </div>
         <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
           {RELEASE_TABS.includes(tab) && <p className="banner banner--release" role="note" data-testid="release-banner">{RELEASE_BANNER}</p>}
+          {tab === "claimsusers" && <p className="banner banner--release" role="note" data-testid="cu-banner">{CLAIMS_USERS_BANNER}</p>}
           <ErrorBoundary resetKey={`${tab}|${vertical}`}>
           {error ? <p className="app-error" role="alert">Could not load the lab ({error}). Is the server running?</p> : !story ? <p className="muted">Loading...</p> : (
             <>
               {presenter && tab !== "talk" && (
                 <aside className="presenter-say" data-testid="presenter-say" aria-label="Talk track">
-                  {story.talkTrack.filter((t) => (tab === "gate" ? ["say-first", "gate", "trap", "unverified"] : tab === "scope" ? ["scope-gates", "unverified"] : tab === "agentcore" ? ["agentcore-gov", "unverified"] : tab === "latest" ? ["latest", "unverified"] : tab === "obo" ? ["obo", "why-obo"] : tab === "console" ? ["console", "why-console"] : tab === "posture" ? ["posture"] : ["gate"]).includes(t.id)).map((t) => <p key={t.id}><strong>{t.title}.</strong> {t.say}</p>)}
+                  {story.talkTrack.filter((t) => (tab === "gate" ? ["say-first", "gate", "trap", "unverified"] : tab === "scope" ? ["scope-gates", "unverified"] : tab === "agentcore" ? ["agentcore-gov", "unverified"] : tab === "latest" ? ["latest", "unverified"] : tab === "claimsusers" ? ["claims-users", "unverified"] : tab === "obo" ? ["obo", "why-obo"] : tab === "console" ? ["console", "why-console"] : tab === "posture" ? ["posture"] : ["gate"]).includes(t.id)).map((t) => <p key={t.id}><strong>{t.title}.</strong> {t.say}</p>)}
                 </aside>
               )}
               {tab === "gate" && <ClaimGate key={vertical} story={story} resetSignal={resetSignal} requestedId={requested} onSelect={pickScenario} />}
+              {tab === "claimsusers" && <ClaimsUsers key={vertical} vertical={vertical} resetSignal={resetSignal} />}
               {tab === "scope" && (scopeStory ? <ScopeGate key={vertical} scope={scopeStory} resetSignal={resetSignal} /> : <p className="muted">Loading...</p>)}
               {tab === "agentcore" && (agStory ? <AgentcoreGov story={agStory} resetSignal={resetSignal} /> : <p className="muted">Loading...</p>)}
               {tab === "latest" && <LatestReleases />}

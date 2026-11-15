@@ -48,6 +48,8 @@ const post = async (url, payload) => {
 };
 // POST /api/obo/evaluate: a scenario id, optionally the backend choice and the scope text (the release tab, on-behalf-of).
 export const evaluateObo = (payload) => post("/api/obo/evaluate", payload);
+// POST /api/claims-users/evaluate: a scenario id, or a custom token, optionally with the visitor's own key id, Subject, End-user claim and End-user mode.
+export const evaluateClaimsUsers = (payload) => post("/api/claims-users/evaluate", payload);
 // POST /api/agentcore-console/act and /probe: a change to the modelled gateway, or a read-only probe of it.
 export const consoleAct = (payload) => post("/api/agentcore-console/act", payload);
 export const consoleProbe = (payload) => post("/api/agentcore-console/probe", payload);

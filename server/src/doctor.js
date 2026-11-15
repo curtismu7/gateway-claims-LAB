@@ -17,6 +17,7 @@ import { MOCK_TABLE } from './consoleTableData.js';
 import { settingsPath } from './settings.js';
 import { buildLatestStory } from './latestStory.js';
 import { LATEST_FACTS } from './latestData.js';
+import { buildClaimsUsersStory, claimsUsersScenarios, CU_TAGS, evaluateClaimsUsersRequest } from './claimsUsersStory.js';
 
 export async function runChecks({ env = process.env, cast = DEFAULT_CAST } = {}) {
   const checks = [];
@@ -82,6 +83,13 @@ export async function runChecks({ env = process.env, cast = DEFAULT_CAST } = {})
   const badFact = LATEST_FACTS.filter((f) => !['measured', 'inferred', 'UNVERIFIED'].includes(f.status));
   const latestBad = [...scanHosts(latest), ...scanKeys(latest), ...unfilled(latest, cast)];
   add('latest-tab', badFact.length || latestBad.length || /"(status|tag)":"verified"/i.test(latest) ? 'fail' : 'pass', badFact.length || latestBad.length ? 'the v1.261029 + v1.261030 text has an unlabelled fact, a non-reserved host, a key-looking value or an unfilled token' : 'every fact on the v1.261029 + v1.261030 tab is labelled, none says verified, and its text names no real host or key');
+
+  // The users-and-groups-from-claims tab: every scenario gives its decision and code in every vertical, every row is tagged, no unfilled token or real host.
+  const cuRows = (st) => [...st.facts, ...st.cedar.facts, ...st.routes.rows, ...st.identityRows, ...st.checks, ...claimsUsersScenarios(st).map((x) => ({ tag: x.evidence }))];
+  const cuWrong = Object.values(VERTICALS).flatMap((v) => { const st = buildClaimsUsersStory(v); return claimsUsersScenarios(st).filter((x) => { const r = evaluateClaimsUsersRequest(st, { scenario: x.id }, v); return r.decision !== x.expected || r.code !== x.code; }).map((x) => x.id); });
+  const cuText = JSON.stringify(Object.values(VERTICALS).map((v) => buildClaimsUsersStory(v)));
+  const cuBad = [...cuRows(buildClaimsUsersStory(cast)).filter((r) => !Object.hasOwn(CU_TAGS, r.tag)).map(() => 'untagged row'), ...scanHosts(cuText), ...scanKeys(cuText), ...unfilled(JSON.stringify(buildClaimsUsersStory(cast)), cast)];
+  add('claims-users', cuWrong.length || cuBad.length ? 'fail' : 'pass', cuWrong.length ? `users-and-groups scenarios that do not give their expected result: ${[...new Set(cuWrong)].join(', ')}` : cuBad.length ? `the users-and-groups tab has an untagged row, a non-reserved host, a key-looking value or an unfilled token: ${cuBad.slice(0, 3).join(', ')}` : `${claimsUsersScenarios(buildClaimsUsersStory(cast)).length} users-and-groups scenarios each give their expected decision and code in every vertical, every row is tagged`);
 
   const ng = await netguardSelfTest();
   add('netguard', ng.ok ? 'pass' : 'fail', ng.ok ? `blocked fetch, socket, socket-by-IP, dns lookup, dns resolve, udp send and udp connect to a non-loopback host (${ng.blocked}/7)` : ng.detail);

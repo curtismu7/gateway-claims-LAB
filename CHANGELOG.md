@@ -1,5 +1,14 @@
 # Changelog
 
+## Users and groups from claims (2026-11-15)
+
+- New tab "Users and groups from claims": a mock-only teaching tab that shows Privilege taking the user and the groups from claims in a token, beside the lab that registers people in PingOne. Twelve scenarios in three steps run in order: the identity gate (issuer, signing key, audience, lifetime, Subject with `*` and `?`, required claims by dotted path; traps: `act` as the text `"{}"`, a required claim typed as the audience, an unpublished signing key), the end user (Opaque or Resolved, the console refusal for a pinned Subject), and claim-conditioned grant tiers (all tools, fewer, or a 403). Comparison panel and the Cedar point. Simulation: every value invented, no cryptography.
+- Engine `server/src/claimsUsers.js` (pure, bounded; reuses `flattenClaims` and `evaluateClaims`), data `claimsUsersData.js`, story `claimsUsersStory.js`, routes `claimsUsersRoutes.js` (`GET /api/claims-users`, `POST /api/claims-users/evaluate`), web `ClaimsUsers.jsx`. `PATH_RE` in `claims.js` is now exported.
+- Tags: measured only where the notes measured it; the owner's statement of 2026-11-15 that any claim can name the user or groups is UNVERIFIED, with its own chip. The banner says it is a simulation, also in presenter mode.
+- Typed text: a credential-looking key id, Subject or End-user claim is refused (400); a typed token is not echoed and every typed value shown back is masked. The masking sweeps cover the new endpoints.
+- Generated: `docs/talk-track.md` and `content-pack.json` (a card and two glossary terms); the doctor checks the scenarios in every vertical.
+- Tests: 29 server, 9 web and 2 script tests added (281 in all). Five of the server tests pin cases an independent review found unpinned: Opaque never looks anyone up (even a person in the directory), exact audience, a missing `iat`, an anchored Subject through the engine, and an exact-case Resolved lookup.
+
 ## Moved to the -LAB standard (2026-11-01)
 
 - New clean repo `gateway-claims-LAB` (one commit, no old history), taken from the main branch of the older private repo. The older branch `feat/h2-2026-release-updates` held no unmerged work (its content was already on main).

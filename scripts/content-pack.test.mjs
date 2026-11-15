@@ -57,3 +57,13 @@ test('the newer-release card is marked UNVERIFIED, links to its tab, and nothing
   assert.match(pack.glossary.find((g) => g.id === 'unmeasured-release').definition, /UNVERIFIED on our tenant/);
   assert.equal(pack.demo.catalog, 'D99');
 });
+
+test('the users-and-groups-from-claims card says it is a simulation, names the owner statement as UNVERIFIED, links to its tab and teaches terms that exist', () => {
+  const pack = buildPack();
+  const card = pack.cards.find((c) => c.id === 'concept-claims-users');
+  assert.ok(card);
+  assert.match(card.description, /^Simulation, mock only/); assert.match(card.description, /2026-11-15, UNVERIFIED/);
+  assert.equal(card.action.href, '/#claimsusers');
+  for (const t of card.terms) assert.ok(pack.glossary.some((g) => g.id === t), t);
+  for (const t of ['end-user-opaque-resolved', 'claim-conditioned-tier']) assert.match(pack.glossary.find((g) => g.id === t).definition, /^Simulation/);
+});

@@ -84,6 +84,25 @@
         "dotted path",
         "FlatClaims"
       ]
+    },
+    {
+      "id": "end-user-opaque-resolved",
+      "term": "End user: Opaque or Resolved",
+      "definition": "Simulation. Opaque: the person is read from a claim (a dotted path, default sub), recorded, and never looked up, so they need exist nowhere in PingOne. Resolved: the person must be a Privilege user, and then directory groups and per-user rules apply. That Privilege can take the user from ANY claim is the owner's statement of 2026-11-15, not measured: UNVERIFIED.",
+      "aliases": [
+        "Opaque",
+        "Resolved",
+        "End-user claim"
+      ]
+    },
+    {
+      "id": "claim-conditioned-tier",
+      "term": "Claim-conditioned grant tier",
+      "definition": "Simulation. A grant rule whose RequiredClaims name a claim by path (groups, realm_access.roles, scope): any one listed value matches a claim, every claim must match, and the tier grants only the tools selected for it, never all tools. Measured for the scope claim (nine tools, three tools, 403); for other claims UNVERIFIED.",
+      "aliases": [
+        "grant tier",
+        "RequiredClaims tier"
+      ]
     }
   ],
   "sources": [
@@ -244,6 +263,21 @@
       },
       "terms": [
         "gateway-scorecard"
+      ]
+    },
+    {
+      "id": "concept-claims-users",
+      "label": "Users and groups from claims: nobody to register",
+      "description": "Simulation, mock only. Twelve scenarios: the identity gate (issuer, signing key, audience, lifetime, subject, required claims and three known traps), the end user (Opaque or Resolved, and the console refusal when Subject is pinned), and claim-conditioned grant tiers (all tools, fewer, or a 403). That Privilege can take the user and the groups from ANY claim is the owner's statement of 2026-11-15, UNVERIFIED. Every row says how well we know it.",
+      "group": "concept",
+      "action": {
+        "type": "route",
+        "href": "/#claimsusers"
+      },
+      "terms": [
+        "end-user-opaque-resolved",
+        "claim-conditioned-tier",
+        "required-claims"
       ]
     },
     {
