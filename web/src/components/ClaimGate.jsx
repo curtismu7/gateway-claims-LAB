@@ -115,7 +115,7 @@ export default function ClaimGate({ story, resetSignal, requestedId, onSelect })
       <section className="panel" aria-labelledby="rule-h">
         <h2 id="rule-h">Rule: {story.rule.name}</h2>
         <p className="muted">{story.rule.appliesTo}</p>
-        <Json value={{ requiredClaims: story.rule.requiredClaims }} label="Rule" testId="rule-json" />
+        <Json value={{ requiredClaims: story.rule.requiredClaims }} label="Rule" testId="rule-json" hot={["path", "equals"]} />
         <p className="muted">{story.rule.note}</p>
         <h3>What we know, and how well</h3>
         <ul className="facts" data-testid="facts">

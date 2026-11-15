@@ -40,8 +40,8 @@ function Section({ section, resetSignal }) {
       <p><span className={STATUS_CLASS[scenario.evidence] || "tag"}>{scenario.evidence}</span> <span className="lesson" data-testid={`ag-lesson-${section.id}`}>{scenario.lesson}</span></p>
       {fail && <p className="field-error" role="alert">{fail}</p>}
       <Outcome run={run} />
-      <h3>Input (mock)</h3><Json value={input} label="Input" />
-      {run && <><h3>Result</h3><Json value={run.result} label="Result" /></>}
+      <h3>Input (mock)</h3><Json value={input} label="Input" hot={["gatewayOnly", "authorizerType", "allowedWorkloads"]} />
+      {run && <><h3>Result</h3><Json value={run.result} label="Result" hot={["bypassPossible", "directInvokers", "callerClass", "risky"]} /></>}
     </section>
   );
 }

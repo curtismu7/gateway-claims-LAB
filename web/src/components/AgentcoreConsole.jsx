@@ -109,7 +109,7 @@ function Walkthroughs({ data, story }) {
         <details key={w.id}><summary>{w.title}</summary>
           <p>{w.say}</p>
           <div className="scroll"><table className="tbl"><thead><tr><th scope="col">Step</th><th scope="col">Request</th><th scope="col">Answer</th></tr></thead>
-            <tbody>{w.steps.map((s, i) => <tr key={i}><td>{i + 1}</td><td><code>{visible(JSON.stringify(s.params))}</code></td><td>{s.ok ? `HTTP ${s.status}: ${visible(s.result.outcome || s.result.engineMode || s.result.wafFailureMode || s.result.pinnedEndpoint || s.result.target || s.result.runtime || s.result.ended || "done")}${s.result.lockedOut && s.result.lockedOut.length ? `, locked out: ${s.result.lockedOut.map(visible).join(", ")}` : ""}` : `HTTP ${s.status}: refused (${visible(s.code)})`}</td></tr>)}</tbody></table></div>
+            <tbody>{w.steps.map((s, i) => <tr key={i}><td>{i + 1}</td><td><Json value={s.params} label={`Request of step ${i + 1}`} hot={["kind", "mode"]} /></td><td>{s.ok ? `HTTP ${s.status}: ${visible(s.result.outcome || s.result.engineMode || s.result.wafFailureMode || s.result.pinnedEndpoint || s.result.target || s.result.runtime || s.result.ended || "done")}${s.result.lockedOut && s.result.lockedOut.length ? `, locked out: ${s.result.lockedOut.map(visible).join(", ")}` : ""}` : `HTTP ${s.status}: refused (${visible(s.code)})`}</td></tr>)}</tbody></table></div>
           <p>Final scorecard: {w.final.scorecard.greenCount} of {w.final.scorecard.total} green.</p>
         </details>
       ))}
