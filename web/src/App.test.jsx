@@ -223,6 +223,7 @@ describe("nested-claim gate tab", () => {
   it("allows the matching scenario and shows token JSON, rule, flattened paths and hops", async () => {
     await ready();
     expect(screen.getByTestId("verdict")).toHaveTextContent("ALLOW");
+    await userEvent.click(screen.getByTestId("token-claims-raw"));
     expect(screen.getByTestId("token-claims")).toHaveTextContent('"sub": "a"');
     expect(screen.getByTestId("rule-json")).toHaveTextContent("act.sub");
     expect(within(screen.getByTestId("flat-table")).getByText("act.sub")).toBeInTheDocument();
