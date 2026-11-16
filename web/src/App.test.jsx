@@ -229,7 +229,8 @@ describe("shell", () => {
   it("shows the banner, the mode, and sends X-Workspace on API calls", async () => {
     await ready();
     expect(screen.getByTestId("banner")).toHaveTextContent(/^SIMULATED, MOCK mode/);
-    expect(screen.getByTestId("mode")).toHaveTextContent("Mode: mock (no Live engine)");
+    expect(screen.getByTestId("mode")).toHaveTextContent(/^mock$/); // the Mock badge in the shell-bar brand
+    expect(document.querySelector("header.shell-bar .shell-brand [data-testid=mode]")).toHaveClass("shell-badge");
     const ev = calls.find((c) => c.url === "/api/evaluate");
     expect(ev.opts.headers["x-workspace"]).toMatch(/^[a-z0-9-]{1,40}$/);
   });
@@ -244,7 +245,7 @@ describe("Mock | Live toggle (every page)", () => {
   it("is in the header on every tab; Mock is pressed; Live is refused with the server's honest message and the page stays in mock", async () => {
     await ready();
     for (const name of ["Nested-claim gate", "Users and groups from claims", "v1.261029 + v1.261030", "On-behalf-of", "AgentCore console", "AgentCore posture", "Diagram", "Talk track"]) {
-      await userEvent.click(screen.getByRole("tab", { name }));
+      await userEvent.click(screen.getByRole("link", { name }));
       expect(screen.getByTestId("top-menu")).toBeVisible();
       expect(screen.getByTestId("mode-select")).toHaveValue("mock");
     }
@@ -255,7 +256,7 @@ describe("Mock | Live toggle (every page)", () => {
     expect(realOption.getAttribute("title")).toMatch(/Mock only/);
     await userEvent.selectOptions(screen.getByTestId("mode-select"), "mock");
     expect(screen.getByTestId("mode-select")).toHaveValue("mock");
-    expect(screen.getByTestId("mode")).toHaveTextContent("Mode: mock");
+    expect(screen.getByTestId("mode")).toHaveTextContent(/^mock$/);
     expect(screen.getByTestId("banner")).toHaveAttribute("data-state", "mock");
     // Rule 19: mock→mock posts /api/mode with exactly {source} and the server's answer reloads the info.
     await userEvent.selectOptions(screen.getByTestId("mode-select"), "mock");
@@ -267,7 +268,7 @@ describe("Mock | Live toggle (every page)", () => {
     override.info = () => Promise.resolve({ ok: true, status: 200, json: async () => ({ mode: "mock", source: "mock", realAvailable: false, realReason: "Mock only: this app has no Live engine (it refuses GCLAB_MODE=live). Nothing here calls a gateway.", modes: { mock: true, live: false }, liveRefusal: "Mock only: this app has no Live engine.", simulated: true }) });
     // force a switchable-looking Real by re-rendering with a 409 server: Real stays disabled so it cannot be pressed
     expect(screen.getByTestId("mode-select").querySelector('option[value="real"]')).toBeDisabled();
-    expect(screen.getByTestId("mode")).toHaveTextContent("Mode: mock");
+    expect(screen.getByTestId("mode")).toHaveTextContent(/^mock$/);
     expect(screen.getByTestId("banner")).toHaveAttribute("data-state", "mock");
   });
 });
@@ -324,7 +325,7 @@ describe("nested-claim gate tab", () => {
 describe("v1.261029 + v1.261030 tab (readings and the not-yet-measured list)", () => {
   it("shows the three images, the readings and the unmeasured features, every one UNVERIFIED, with its own banner, and nothing marked verified", async () => {
     await ready();
-    await userEvent.click(screen.getByRole("tab", { name: "v1.261029 + v1.261030" }));
+    await userEvent.click(screen.getByRole("link", { name: "v1.261029 + v1.261030" }));
     expect(await screen.findByTestId("latest-tab")).toBeInTheDocument();
     expect(screen.getByTestId("latest-banner")).toHaveTextContent("UNVERIFIED");
     expect(screen.getByTestId("banner")).toBeVisible();
@@ -340,7 +341,7 @@ describe("v1.261029 + v1.261030 tab (readings and the not-yet-measured list)", (
   });
   it("presenter mode keeps both banners and shows the matching talk-track entry", async () => {
     await ready();
-    await userEvent.click(screen.getByRole("tab", { name: "v1.261029 + v1.261030" }));
+    await userEvent.click(screen.getByRole("link", { name: "v1.261029 + v1.261030" }));
     await screen.findByTestId("latest-tab");
     await userEvent.keyboard("p");
     expect(screen.getByTestId("banner")).toBeVisible();
@@ -351,16 +352,16 @@ describe("v1.261029 + v1.261030 tab (readings and the not-yet-measured list)", (
     const orig = globalThis.fetch;
     globalThis.fetch = vi.fn(async (url, opts) => (url === "/api/latest" ? { ok: false, status: 500, json: async () => ({}) } : orig(url, opts)));
     await ready();
-    await userEvent.click(screen.getByRole("tab", { name: "v1.261029 + v1.261030" }));
+    await userEvent.click(screen.getByRole("link", { name: "v1.261029 + v1.261030" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not load the newer-release notes");
-    expect(screen.getByRole("tablist")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Lab sections" })).toBeInTheDocument();
   });
 });
 
 describe("AgentCore posture tab", () => {
   it("is labelled shape-only and lists gateways, engines (orphaned) and the account posture", async () => {
     await ready();
-    await userEvent.click(screen.getByRole("tab", { name: "AgentCore posture" }));
+    await userEvent.click(screen.getByRole("link", { name: "AgentCore posture" }));
     expect(await screen.findByTestId("posture-label")).toHaveTextContent("Shape only - field values invented - UNVERIFIED against the real product");
     expect(screen.getByTestId("banner")).toBeInTheDocument();
     expect(screen.getByTestId("gateway-detail")).toHaveTextContent("CUSTOM_JWT");
@@ -375,7 +376,7 @@ describe("AgentCore posture tab", () => {
 describe("diagram tab", () => {
   it("draws the boxes from /api/diagram and Simulate highlights a step; Reset clears it", async () => {
     await ready();
-    await userEvent.click(screen.getByRole("tab", { name: "Diagram" }));
+    await userEvent.click(screen.getByRole("link", { name: "Diagram" }));
     expect(await screen.findByText("P1 Privilege Agent App")).toBeInTheDocument();
     expect(calls.some((c) => c.url.startsWith("/api/diagram?vertical=retail"))).toBe(true);
     expect(screen.getByTestId("banner")).toBeInTheDocument();
@@ -390,9 +391,9 @@ describe("diagram tab", () => {
 describe("talk track and presenter mode", () => {
   it("lists the talk track; presenter mode keeps the banner and shows the say-text; Esc leaves", async () => {
     await ready();
-    await userEvent.click(screen.getByRole("tab", { name: "Talk track" }));
+    await userEvent.click(screen.getByRole("link", { name: "Talk track" }));
     expect(screen.getByTestId("talk-track")).toHaveTextContent("Everything is simulated.");
-    await userEvent.click(screen.getByRole("tab", { name: "Nested-claim gate" }));
+    await userEvent.click(screen.getByRole("link", { name: "Nested-claim gate" }));
     await userEvent.keyboard("p");
     expect(await screen.findByTestId("presenter-say")).toHaveTextContent("Walk it.");
     expect(screen.getByTestId("banner")).toHaveTextContent(/^SIMULATED/);
@@ -429,11 +430,11 @@ describe("banner visibility on every tab and in presenter mode", () => {
   it("is visible (not hidden, not display:none) on every tab and in presenter mode", async () => {
     await ready();
     for (const name of ["Nested-claim gate", "Users and groups from claims", "v1.261029 + v1.261030", "AgentCore posture", "Diagram", "Talk track"]) {
-      await userEvent.click(screen.getByRole("tab", { name }));
+      await userEvent.click(screen.getByRole("link", { name }));
       expect(screen.getByTestId("banner")).toBeVisible();
       expect(screen.getByTestId("banner")).not.toHaveAttribute("hidden");
     }
-    await userEvent.click(screen.getByRole("tab", { name: "Nested-claim gate" }));
+    await userEvent.click(screen.getByRole("link", { name: "Nested-claim gate" }));
     await userEvent.keyboard("p");
     await screen.findByTestId("presenter-say");
     expect(screen.getByTestId("banner")).toBeVisible();
@@ -465,7 +466,7 @@ describe("links from the content pack: /#scenario-<id>", () => {
     window.location.hash = "#scenario-act-text";
     render(<App />);
     await waitFor(() => expect(screen.getByTestId("verdict")).toHaveTextContent("DENY"));
-    expect(screen.getByRole("tab", { name: "Nested-claim gate" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("link", { name: "Nested-claim gate" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("button", { name: /text "\{\}"/ })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("verdict").querySelector('[data-reason="parent_not_object"]')).not.toBeNull();
   });
@@ -486,12 +487,31 @@ describe("links from the content pack: /#scenario-<id>", () => {
 });
 
 describe("accessibility structure and display safety", () => {
-  it("has one main landmark, one banner status inside the header, and a tabpanel that is not the main", async () => {
+  it("has one main landmark; the shell bar comes first, then main with the banner as its first child and the panel inside", async () => {
     await ready();
     expect(screen.getAllByRole("main")).toHaveLength(1);
-    expect(screen.getByRole("banner")).toContainElement(screen.getByTestId("banner"));
-    expect(screen.getByRole("tabpanel")).not.toBe(screen.getByRole("main"));
-    expect(screen.getByRole("main")).toContainElement(screen.getByRole("tabpanel"));
+    const bar = screen.getByRole("banner");
+    expect(bar).toHaveClass("shell-bar");
+    expect(bar.nextElementSibling).toBe(screen.getByRole("main"));
+    expect(bar).not.toContainElement(screen.getByTestId("banner"));
+    expect(screen.getByRole("main").firstElementChild).toBe(screen.getByTestId("banner"));
+    expect(screen.getByTestId("panel")).not.toBe(screen.getByRole("main"));
+    expect(screen.getByRole("main")).toContainElement(screen.getByTestId("panel"));
+  });
+  it("shell bar: brand with the h1, one pill per section with the current one marked, and the TopMenu with the Shelf link and the mark slot", async () => {
+    await ready();
+    const bar = screen.getByRole("banner");
+    expect(within(bar).getByRole("heading", { level: 1 })).toHaveTextContent("Gateway Claims LAB");
+    const nav = within(bar).getByRole("navigation", { name: "Lab sections" });
+    expect(within(nav).getAllByRole("link")).toHaveLength(10);
+    expect(nav.querySelectorAll('a[aria-current="page"]')).toHaveLength(1);
+    expect(within(nav).getByRole("link", { name: "Nested-claim gate" })).toHaveAttribute("aria-current", "page");
+    await userEvent.click(within(nav).getByRole("link", { name: "Diagram" }));
+    expect(within(nav).getByRole("link", { name: "Diagram" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "Nested-claim gate" })).not.toHaveAttribute("aria-current");
+    expect(window.location.hash).toBe("#diagram");
+    expect(within(bar).getByTestId("top-menu")).toHaveClass("shell-right");
+    expect(within(bar).getByTestId("top-menu")).toContainElement(await screen.findByRole("link", { name: "Shelf" }));
   });
   it("control and bidi characters are shown as visible escapes", () => {
     expect(visible("a" + String.fromCharCode(0x202e) + "b" + String.fromCharCode(7) + "c" + String.fromCharCode(0x200b) + "d" + String.fromCharCode(0x85) + "e")).toBe("a" + String.fromCharCode(92) + "u202eb" + String.fromCharCode(92) + "u0007c" + String.fromCharCode(92) + "u200bd" + String.fromCharCode(92) + "u0085e");
@@ -500,7 +520,7 @@ describe("accessibility structure and display safety", () => {
 });
 
 describe("v1.261027 scope gates tab", () => {
-  const openScope = async () => { await ready(); await userEvent.click(screen.getByRole("tab", { name: "v1.261027 scope gates" })); await screen.findByTestId("scope-section-cedar"); };
+  const openScope = async () => { await ready(); await userEvent.click(screen.getByRole("link", { name: "v1.261027 scope gates" })); await screen.findByTestId("scope-section-cedar"); };
   it("runs the Cedar scenarios: an Active policy denies with the JSON-RPC code, a candidate only shadows", async () => {
     await openScope();
     const cedar = screen.getByTestId("scope-section-cedar");
@@ -538,14 +558,14 @@ describe("v1.261027 scope gates tab", () => {
   });
   it("the diagram tab offers the second diagram by name", async () => {
     await ready();
-    await userEvent.click(screen.getByRole("tab", { name: "Diagram" }));
+    await userEvent.click(screen.getByRole("link", { name: "Diagram" }));
     await userEvent.click(await screen.findByRole("button", { name: "v1.261027 scope gates" }));
     await waitFor(() => expect(calls.some((c) => /name=scope-gate/.test(c.url))).toBe(true));
   });
 });
 
 describe("v1.261028 AgentCore tab", () => {
-  const openAg = async () => { await ready(); await userEvent.click(screen.getByRole("tab", { name: "v1.261028 AgentCore" })); await screen.findByTestId("ag-section-bypass"); };
+  const openAg = async () => { await ready(); await userEvent.click(screen.getByRole("link", { name: "v1.261028 AgentCore" })); await screen.findByTestId("ag-section-bypass"); };
   it("shows a bypass for the open runtime policy and none once gateway-only is on", async () => {
     await openAg();
     const sec = screen.getByTestId("ag-section-bypass");
@@ -571,7 +591,7 @@ describe("v1.261028 AgentCore tab", () => {
 // H2 2026 release tabs: on-behalf-of and the AgentCore console
 // ---------------------------------------------------------------------------------------------------------------------------------------------
 const RELEASE_WORDS = /^Ping release claim, UNVERIFIED on our tenant/;
-const openTab = async (name) => { await userEvent.click(screen.getByRole("tab", { name })); };
+const openTab = async (name) => { await userEvent.click(screen.getByRole("link", { name })); };
 const pickVertical = async (v) => { await userEvent.selectOptions(screen.getByLabelText(/Vertical/), v); };
 const ALL_TABS = ["Nested-claim gate", "Users and groups from claims", "v1.261027 scope gates", "v1.261028 AgentCore", "v1.261029 + v1.261030", "On-behalf-of", "AgentCore console", "AgentCore posture", "Diagram", "Talk track"];
 
@@ -584,7 +604,8 @@ describe("release tabs: banner, mode and presenter", () => {
       expect(screen.getByTestId("release-banner")).toHaveTextContent(RELEASE_WORDS);
       expect(screen.getByTestId("release-banner")).toBeVisible();
       expect(screen.getByTestId("banner")).toHaveTextContent(/^SIMULATED, MOCK mode/);
-      expect(screen.getByTestId("mode")).toHaveTextContent("Mode: mock (no Live engine)");
+      expect(screen.getByTestId("mode")).toHaveTextContent(/^mock$/); // the Mock badge in the shell-bar brand
+    expect(document.querySelector("header.shell-bar .shell-brand [data-testid=mode]")).toHaveClass("shell-badge");
       expect(await screen.findByTestId(noLive)).toHaveTextContent("no Live engine");
     }
   });
@@ -615,7 +636,7 @@ describe("release tabs: banner, mode and presenter", () => {
     for (const [h, name, id] of [["#obo", "On-behalf-of", "obo-tab"], ["#console", "AgentCore console", "gc-tab"]]) {
       window.location.hash = h; const { unmount } = render(<App />);
       expect(await screen.findByTestId(id)).toBeInTheDocument();
-      expect(screen.getByRole("tab", { name })).toHaveAttribute("aria-selected", "true"); unmount();
+      expect(screen.getByRole("link", { name })).toHaveAttribute("aria-current", "page"); unmount();
     }
   });
 });
@@ -628,9 +649,9 @@ describe("render guard: changing the vertical on EVERY tab never blanks the page
       for (const v of ["health", "retail"]) {
         await pickVertical(v);
         expect(screen.getByTestId("banner")).toBeVisible();
-        expect(screen.getByRole("tablist")).toBeInTheDocument();
+        expect(screen.getByRole("navigation", { name: "Lab sections" })).toBeInTheDocument();
         expect(screen.queryByTestId("tab-crash")).toBeNull();
-        await waitFor(() => expect(screen.getByRole("tabpanel").textContent.length).toBeGreaterThan(20));
+        await waitFor(() => expect(screen.getByTestId("panel").textContent.length).toBeGreaterThan(20));
         expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Gateway Claims LAB");
       }
     }
@@ -641,7 +662,7 @@ describe("render guard: changing the vertical on EVERY tab never blanks the page
       override.obo = async (url) => (url === "/api/obo/evaluate" ? { ok: true, status: 200, json: async () => ({}) } : { ok: true, status: 200, json: async () => OBO_STORY }); // an answer with no result
       await ready(); await openTab("On-behalf-of");
       expect(await screen.findByTestId("tab-crash")).toHaveTextContent("could not be drawn");
-      expect(screen.getByTestId("banner")).toBeVisible(); expect(screen.getByTestId("release-banner")).toBeVisible(); expect(screen.getByRole("tablist")).toBeInTheDocument();
+      expect(screen.getByTestId("banner")).toBeVisible(); expect(screen.getByTestId("release-banner")).toBeVisible(); expect(screen.getByRole("navigation", { name: "Lab sections" })).toBeInTheDocument();
       await openTab("AgentCore console");
       expect(screen.queryByTestId("tab-crash")).toBeNull(); expect(await screen.findByTestId("gc-tab")).toBeInTheDocument();
       override.obo = undefined; await openTab("On-behalf-of");
@@ -838,13 +859,14 @@ describe("users and groups from claims tab", () => {
     expect(screen.getByTestId("cu-banner")).toHaveTextContent("UNVERIFIED");
     expect(screen.getByTestId("cu-banner")).toBeVisible();
     expect(screen.getByText("Loading...")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Users and groups from claims" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("link", { name: "Users and groups from claims" })).toHaveAttribute("aria-current", "page");
     override.cu = undefined;
     await openTab("Nested-claim gate"); await openTab("Users and groups from claims");
     await screen.findByTestId("cu-verdict");
     expect(screen.getByTestId("cu-no-live")).toHaveTextContent("no Live engine");
     expect(screen.getByTestId("banner")).toHaveTextContent(/^SIMULATED, MOCK mode/);
-    expect(screen.getByTestId("mode")).toHaveTextContent("Mode: mock (no Live engine)");
+    expect(screen.getByTestId("mode")).toHaveTextContent(/^mock$/); // the Mock badge in the shell-bar brand
+    expect(document.querySelector("header.shell-bar .shell-brand [data-testid=mode]")).toHaveClass("shell-badge");
     expect(screen.getByTestId("mode-select")).toHaveValue("mock");
     expect(screen.getByTestId("mode-select").querySelector('option[value="real"]')).toBeDisabled();
     await userEvent.keyboard("p");
@@ -988,7 +1010,7 @@ describe("users and groups from claims tab", () => {
     override.cu = async (url) => (url === "/api/claims-users/evaluate" ? { ok: false, status: 500, json: async () => ({ error: "internal_error" }) } : { ok: true, status: 200, json: async () => CU_STORY });
     await userEvent.click(screen.getByRole("button", { name: "Signing key not published" }));
     expect(await screen.findByTestId("cu-fail")).toHaveTextContent("Could not evaluate (internal_error)");
-    expect(screen.getByRole("tablist")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Lab sections" })).toBeInTheDocument();
     override.cu = async () => ({ ok: false, status: 500, json: async () => ({}) });
     await pickVertical("health");
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not load the users and groups from claims tab");
@@ -997,7 +1019,7 @@ describe("users and groups from claims tab", () => {
   it("opens from the content-pack link /#claimsusers and reloads for another vertical", async () => {
     window.location.hash = "#claimsusers"; render(<App />);
     expect(await screen.findByTestId("cu-tab")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Users and groups from claims" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("link", { name: "Users and groups from claims" })).toHaveAttribute("aria-current", "page");
     await pickVertical("health");
     await waitFor(() => expect(calls.some((c) => /\/api\/claims-users\?vertical=health/.test(c.url))).toBe(true));
     await waitFor(() => expect(calls.filter((c) => c.url === "/api/claims-users/evaluate").some((c) => JSON.parse(c.opts.body).vertical === "health")).toBe(true));

@@ -116,7 +116,7 @@ function CustomEditor({ story, scenario, onRun, begin, vertical, resetSignal }) 
         <option value="opaque">Opaque (record the person, never look them up)</option>
         <option value="resolved">Resolved (the person must be a Privilege user)</option>
       </select>
-      <p><ActionButton onClick={run}>Evaluate custom</ActionButton></p>
+      <p><ActionButton className="primary" onClick={run}>Evaluate custom</ActionButton></p>
       {error && <p className="field-error" role="alert" data-testid="cu-custom-error">{error}</p>}
     </section>
   );
