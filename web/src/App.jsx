@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ClaimGate from "./components/ClaimGate";
 import ScopeGate from "./components/ScopeGate";
 import ClaimsUsers from "./components/ClaimsUsers";
@@ -81,7 +81,6 @@ export default function App() {
   };
   const [theme, setTheme] = useState(initialTheme);
   const [fontStep, setFontStep] = useState(() => { try { const f = localStorage.getItem("gwcl.font"); return ["S","M","L"].includes(f) ? f : "M"; } catch { return "M"; } });
-  const navRef = useRef(null);
 
   useEffect(() => { if (theme === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme; }, [theme]);
   useEffect(() => { applyFontSize(fontStep); try { localStorage.setItem("gwcl.font", fontStep); } catch {} }, [fontStep]);
@@ -97,14 +96,6 @@ export default function App() {
   }, []);
   const select = (id) => { setTab(id); setRequested(null); try { window.history.replaceState(null, "", `#${id}`); } catch { /* ignore */ } };
   const pickScenario = (sid) => { try { window.history.replaceState(null, "", `#scenario-${sid}`); } catch { /* ignore */ } };
-
-  // Keep the current pill fully in view when the one-row nav scrolls sideways (narrow desktop windows).
-  useEffect(() => {
-    const nav = navRef.current; const el = nav && nav.querySelector('a[aria-current="page"]');
-    if (!nav || !el) return;
-    const left = el.offsetLeft - nav.offsetLeft;
-    if (left < nav.scrollLeft || left + el.offsetWidth > nav.scrollLeft + nav.clientWidth) nav.scrollLeft = Math.max(0, left - 8);
-  }, [tab]);
 
   useEffect(() => {
     const on = (e) => {
@@ -137,7 +128,7 @@ export default function App() {
           <h1>Gateway Claims LAB</h1>
           <span className="shell-badge" data-testid="mode" title="Mock only: this lab has no Live engine">{info ? info.mode : "mock"}</span>
         </span>
-        <nav className="shell-nav" aria-label="Lab sections" ref={navRef}>
+        <nav className="shell-nav" aria-label="Lab sections">
           {TABS.map((t) => (
             <a key={t.id} href={`#${t.id}`} aria-current={tab === t.id ? "page" : undefined}
               onClick={(e) => { e.preventDefault(); select(t.id); }}>{t.label}</a>
