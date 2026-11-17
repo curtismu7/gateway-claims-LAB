@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import ReleaseNotes from "./ReleaseNotes.jsx";
 
 /**
  * TopMenu: the standardized right side of the shell bar for every -LAB app.
@@ -21,15 +22,20 @@ import React from "react";
  * driving the same state. Styles come from the vendored top-menu.css.
  *
  * Props:
- *   mode             { value: 'mock'|'real', onChange(v), realAvailable, realHint } — omit for mock-only labs
+ *   mode             { value: 'mock'|'real', onChange(v), realAvailable, realHint, realHintAlways? } — omit for mock-only labs.
+ *                    realHint is the Real option's tooltip while Real is unavailable; realHintAlways: true also shows it when Real is available
  *   vertical         { value, onChange, options: [ids] } — omit when the lab has no verticals
  *   theme            { value: 'auto'|'light'|'dark', onChange }
  *   fontSize         { value: 'S'|'M'|'L', onChange } — S/M/L map to 14/16/18px root
  *   present         { active, onToggle, label='Present (P)' } — omit when the lab has no presenter mode
  *   talkTrack       { active, onToggle } — omit when the lab has no presenter script
  *   shelfUrl        optional; when given renders the Shelf link, otherwise pass your own <ShelfLink/> via children
- *   help            { href, onClick? } — link to the lab's documentation; omit when there are no docs
+ *   help            { href?, onClick?, label?, title? } — the lab's documentation; omit when there are no docs.
+ *                    With href: a link that opens in a new tab. Without href: a button that calls onClick
+ *                    (default: go to #readme). label defaults to "Help", title to "Open this lab's documentation"
  *   version         string — About/version button label (e.g. "v1.4.2", from the lab's VERSION file); omit when unknown
+ *   onVersion       fn — what the version button does when clicked. Omit it and the button opens the shared
+ *                     release-notes dialog (ReleaseNotes.jsx) by itself; a lab-specific action replaces that
  *   onReset          fn; when given renders the Reset button
  *   showSignIn       bool — true only when Real mode is active and the lab needs auth
  *   signedIn         { subject, onSignIn, onSignOut } — when signed in shows "Signed in as <subject>" + Sign out
@@ -52,6 +58,7 @@ export default function TopMenu({
   shelfUrl,
   help,
   version,
+  onVersion,
   onReset,
   showSignIn = false,
   signedIn,
@@ -60,6 +67,10 @@ export default function TopMenu({
 }) {
   const themeValue = theme?.value ?? "auto";
   const fontValue = fontSize?.value ?? "M";
+  // Rule (owner, 2026-11-17): the version button never does nothing. With onVersion the lab decides
+  // what the click does; without it the button opens the shared release-notes dialog itself.
+  const [notesOpen, setNotesOpen] = useState(false);
+  const onVersionClick = onVersion || (() => setNotesOpen(true));
   return (
     <span className="top-menu shell-right" data-testid="top-menu">
       {/* Sign in stands alone: the app shell centers this slot on the bar's top line */}
@@ -92,7 +103,7 @@ export default function TopMenu({
                 value="real"
                 data-testid="mode-real"
                 disabled={mode.realAvailable === false}
-                title={mode.realAvailable === false ? (mode.realHint || "Real is not configured. Mock keeps working.") : undefined}
+                title={mode.realAvailable === false ? (mode.realHint || "Real is not configured. Mock keeps working.") : (mode.realHintAlways ? (mode.realHint || undefined) : undefined)}
               >
                 Real
               </option>
@@ -122,13 +133,19 @@ export default function TopMenu({
             Shelf
           </a>
         )}
-        {help && (
-          <a className="top-menu__shelf" href={help.href} onClick={help.onClick} target="_blank" rel="noreferrer" title="Open this lab's documentation" data-testid="help-link">
-            Help
-          </a>
-        )}
+        {help && (help.href
+          ? (
+            <a className="top-menu__shelf" href={help.href} onClick={help.onClick} target="_blank" rel="noreferrer" title={help.title || "Open this lab's documentation"} data-testid="help-link">
+              {help.label || "Help"}
+            </a>
+          )
+          : (
+            <button type="button" className="top-menu__shelf" onClick={help.onClick || (() => { window.location.hash = "#readme"; })} title={help.title || "Open this lab's documentation"} data-testid="help-link">
+              {help.label || "Help"}
+            </button>
+          ))}
         {version && (
-          <button type="button" data-testid="version" title="About this lab">{version}</button>
+          <button type="button" data-testid="version" title="About this lab" onClick={onVersionClick}>{version}</button>
         )}
         {onReset && (
           <button type="button" data-testid="reset" onClick={onReset}>Reset</button>
@@ -165,6 +182,7 @@ export default function TopMenu({
           </>
         )}
       </span>
+      {!onVersion && notesOpen && <ReleaseNotes version={version || ""} onClose={() => setNotesOpen(false)} />}
     </span>
   );
 }
