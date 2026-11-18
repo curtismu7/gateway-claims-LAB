@@ -10,6 +10,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Posture from "./components/Posture";
 import DiagramTab from "./components/DiagramTab";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu";
+import TalkTrackDialog from "./talk-track/TalkTrackDialog.jsx";
 import ShelfLink from "./components/ShelfLink";
 import VerifyMark from "./components/VerifyMark";
 import TalkTrack from "./components/TalkTrack";
@@ -58,6 +59,7 @@ export default function App() {
   const [tab, setTab] = useState(hashParts().tab);
   const [requested, setRequested] = useState(hashParts().scenario);
   const [presenter, setPresenter] = useState(false);
+  const [talkOpen, setTalkOpen] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
   const [resetMsg, setResetMsg] = useState("");
   const [liveMsg, setLiveMsg] = useState(false); // Live was pressed: this app has no Live engine, and says so
@@ -140,6 +142,7 @@ export default function App() {
           theme={{ value: theme, onChange: pickTheme }}
           fontSize={{ value: fontStep, onChange: setFontStep }}
           present={{ active: presenter, onToggle: () => setPresenter((v) => !v) }}
+          talkTrack={{ active: talkOpen, onToggle: () => setTalkOpen((v) => !v) }}
           help={{ href: "https://github.com/curtismu7/gateway-claims-LAB#readme" }}
           version={info?.version || null}
           onReset={reset}
@@ -180,6 +183,8 @@ export default function App() {
           </ErrorBoundary>
         </div>
       </main>
+
+      <TalkTrackDialog isOpen={talkOpen} onClose={() => setTalkOpen(false)} talk={story?.talkTrack ?? []} />
     </div>
   );
 }
