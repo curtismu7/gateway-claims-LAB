@@ -34,6 +34,7 @@ export function Hops({ hops, traceId }) {
   return (
     <section aria-label="Mock hops with traceparent" data-testid="hops">
       <h3>Hops (W3C traceparent) <span className="muted">trace {traceId}</span></h3>
+      <div className="hops-grid">
       {hops.map((h) => (
         <details key={h.n} open={h.n === 1}>
           <summary>{h.n}. {h.label}</summary>
@@ -41,6 +42,7 @@ export function Hops({ hops, traceId }) {
           <p className="muted">Response</p><Json value={h.response} label={`Response of hop ${h.n}`} />
         </details>
       ))}
+      </div>
     </section>
   );
 }
@@ -62,8 +64,8 @@ function CustomEditor({ scenario, rule, onResult, resetSignal }) {
     onResult(res.body);
   };
   return (
-    <section className="panel" aria-labelledby="custom-h">
-      <h3 id="custom-h">Custom token and rule</h3>
+      <section className="panel" aria-labelledby="custom-h">
+      <h3 id="custom-h"><span className="step-num" aria-hidden="true">5</span>Custom token and rule</h3>
       <p className="muted">Edit the claims or the rule and evaluate. Input is bounded: 8 KB, depth 6, 200 claims.</p>
       <label htmlFor="custom-token">Token claims (JSON)</label>
       <textarea id="custom-token" rows={10} value={tokenText} onChange={(e) => setTokenText(e.target.value)} spellCheck={false} />
@@ -93,14 +95,14 @@ export default function ClaimGate({ story, resetSignal, requestedId, onSelect, s
   return (
     <div className="gate">
       <section className="panel" aria-labelledby="sc-h">
-        <h2 id="sc-h">Scenarios</h2>
+        <h2 id="sc-h"><span className="step-num" aria-hidden="true">1</span>Scenarios</h2>
         <div className="seg" role="group" aria-label="Scenario">
           {story.scenarios.map((s) => <button key={s.id} type="button" aria-pressed={s.id === id} onClick={() => { setId(s.id); if (onSelect) onSelect(s.id); }}>{s.title}</button>)}
         </div>
         <p className="lesson" data-testid="lesson">{scenario.lesson}</p>
       </section>
       <section className="panel" aria-labelledby="res-h">
-        <h2 id="res-h">Result</h2>
+        <h2 id="res-h"><span className="step-num" aria-hidden="true">2</span>Result</h2>
         {fail && <p className="field-error" role="alert">{fail}</p>}
         <Verdict result={result} />
         {result && <FlatTable flat={result.flat} />}
@@ -108,14 +110,14 @@ export default function ClaimGate({ story, resetSignal, requestedId, onSelect, s
         <GatewayTrace source={source} exchanges={result?.trace ? [{ step: 1, title: "Agent calls the gateway", status: result.trace.response?.status ?? null, trace: result.trace }] : []} />
       </section>
       <section className="panel" aria-labelledby="tok-h">
-        <h2 id="tok-h">Token (decoded)</h2>
+        <h2 id="tok-h"><span className="step-num" aria-hidden="true">3</span>Token (decoded)</h2>
         <p className="tag tag--warn">{story.tokenLabel}</p>
         <h3>Header</h3><Json value={scenario.token.header} label="Token header" />
         <h3>Payload (claims)</h3><Json value={scenario.token.claims} label="Token payload" testId="token-claims" />
         <h3>Signature</h3><Json value={scenario.token.signature} label="Token signature" />
       </section>
       <section className="panel" aria-labelledby="rule-h">
-        <h2 id="rule-h">Rule: {story.rule.name}</h2>
+        <h2 id="rule-h"><span className="step-num" aria-hidden="true">4</span>Rule: {story.rule.name}</h2>
         <p className="muted">{story.rule.appliesTo}</p>
         <Json value={{ requiredClaims: story.rule.requiredClaims }} label="Rule" testId="rule-json" hot={["path", "equals"]} />
         <p className="muted">{story.rule.note}</p>
