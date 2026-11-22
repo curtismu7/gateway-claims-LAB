@@ -1,0 +1,140 @@
+{
+  "name": "Gateway Claims LAB",
+  "slug": "gateway-claims-lab",
+  "description": "API collection for Gateway Claims LAB: the measured PingFederate-style gateway claim-gate replayed with invented values. Evaluate a claim rule against a scenario token (allow, wrong act.sub, no act, act as text, wrong client), run the AgentCore governance evaluate, and read the scope-gate, posture and release notes. The gate logic follows the measurements; the values are invented and labelled.",
+  "baseUrl": "http://localhost:5150",
+  "env": {},
+  "folders": [
+    {
+      "name": "Sanity (values invented, labelled)",
+      "description": "Health, mode info, the scenario catalog and the posture/release notes.",
+      "requests": [
+        {
+          "name": "Health",
+          "method": "GET",
+          "path": "/api/health",
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().state).to.eql('ready');"
+          ]
+        },
+        {
+          "name": "Info",
+          "method": "GET",
+          "path": "/api/info",
+          "tests": [
+            "pm.response.to.have.status(200);"
+          ]
+        },
+        {
+          "name": "Scenario catalog",
+          "method": "GET",
+          "path": "/api/scenarios",
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().scenarios.map(x=>x.id)).to.include('allowed');"
+          ]
+        },
+        {
+          "name": "Posture (shape only, UNVERIFIED)",
+          "method": "GET",
+          "path": "/api/posture",
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json()).to.have.property('gateways');"
+          ]
+        },
+        {
+          "name": "Scope-gate notes (measured 2026-10-27)",
+          "method": "GET",
+          "path": "/api/scope-gate",
+          "tests": [
+            "pm.response.to.have.status(200);"
+          ]
+        },
+        {
+          "name": "Newer releases (not measured)",
+          "method": "GET",
+          "path": "/api/latest",
+          "tests": [
+            "pm.response.to.have.status(200);"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Claim-gate evaluation",
+      "description": "Evaluate by scenario id, or with a custom {token, rule}. Decision and per-claim checks come back for each; every run is recorded.",
+      "requests": [
+        {
+          "name": "Evaluate: allowed (control)",
+          "method": "POST",
+          "path": "/api/evaluate",
+          "body": {
+            "scenario": "allowed"
+          },
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().decision).to.eql('allow');"
+          ]
+        },
+        {
+          "name": "Evaluate: wrong act.sub (deny)",
+          "method": "POST",
+          "path": "/api/evaluate",
+          "body": {
+            "scenario": "wrong-act-sub"
+          },
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().decision).to.eql('deny');"
+          ]
+        },
+        {
+          "name": "Evaluate: no act (deny)",
+          "method": "POST",
+          "path": "/api/evaluate",
+          "body": {
+            "scenario": "no-act"
+          },
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().decision).to.eql('deny');"
+          ]
+        },
+        {
+          "name": "Evaluate: unknown scenario (negative)",
+          "method": "POST",
+          "path": "/api/evaluate",
+          "body": {
+            "scenario": "nope"
+          },
+          "tests": [
+            "pm.expect(pm.response.code).to.eql(400);"
+          ]
+        },
+        {
+          "name": "Evaluate with a bad token (negative)",
+          "method": "POST",
+          "path": "/api/evaluate",
+          "body": {
+            "token": "not-an-object",
+            "rule": {}
+          },
+          "tests": [
+            "pm.expect(pm.response.code).to.eql(400);"
+          ]
+        },
+        {
+          "name": "Run history",
+          "method": "GET",
+          "path": "/api/runs",
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().runs).to.be.an('array');"
+          ]
+        }
+      ]
+    }
+  ]
+}
