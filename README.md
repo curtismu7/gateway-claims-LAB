@@ -44,6 +44,15 @@ Three vertical packs (retail, health, finance) change every name. Every row on t
 
 Prerequisites: Node 26 or newer. Docker only if you use the Docker form. Mock mode works with no setup at all: no tenant, no credentials, no settings file.
 
+### Postman
+
+`postman/gateway-claims-lab.postman_collection.json` drives the claim gate without the UI: the scenario catalog and posture/scope-gate/release notes, evaluations for the control (`allowed`) and the deny cases (`wrong-act-sub`, `no-act`), the unknown-scenario and bad-token negatives, and the run history. No environment needed — the gate logic follows the measurements, the values are invented and labelled.
+
+```
+node ../../shared/postman/generator.mjs --spec postman/spec.json            # regenerate (never hand-edit the output)
+npx newman run postman/gateway-claims-lab.postman_collection.json
+```
+
 ```
 git clone https://github.com/curtismu7/gateway-claims-LAB.git
 cd gateway-claims-LAB
