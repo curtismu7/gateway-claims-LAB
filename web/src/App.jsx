@@ -137,6 +137,7 @@ export default function App() {
           ))}
         </nav>
         <TopMenu
+          postman={{ repo: "curtismu7/gateway-claims-LAB", slug: "gateway-claims-lab" }}
           mode={{ value: source === "real" ? "real" : "mock", onChange: (v) => switchMode(v === "real" ? "live" : "mock"), realAvailable, realHint: realReason }}
           vertical={{ value: vertical, onChange: setVertical, options: story ? story.verticals : ["retail"] }}
           theme={{ value: theme, onChange: pickTheme }}
