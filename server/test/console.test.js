@@ -45,7 +45,7 @@ test('bypass is open when the resource policy is not gateway-only OR any caller 
   assert.equal(bypassOpen({ ...rt, callers: [{ principal: 'p', viaGateway: true, direct: true }] }), true);
   const diff = bypassDiff(seedGateway(DEFAULT_CAST));
   assert.deepEqual(diff[0].bypassOnly, ['role-lab-batch-job']);
-  assert.deepEqual(diff[0].gatewayMediated, ['role-lab-orders-agent']);
+  assert.deepEqual(diff[0].gatewayMediated, ['role-lab-passenger-chat-agent']);
   assert.deepEqual(diff[1], { runtime: 'rt-2', gatewayMediated: [], bypassOnly: [] });
 });
 
@@ -53,10 +53,10 @@ test('set-target: disable and enable, the effect shows in the scorecard-free sta
   const lab = fresh();
   const r = lab.act({ kind: 'set-target', target: 'tg-1', enabled: false });
   assert.equal(r.enabled, false); assert.equal(lab.gw.targets[0].enabled, false);
-  assert.equal(lab.probe({ kind: 'gateway-call', principal: 'role-lab-orders-agent', target: 'tg-1' }).outcome, 'refused');
+  assert.equal(lab.probe({ kind: 'gateway-call', principal: 'role-lab-passenger-chat-agent', target: 'tg-1' }).outcome, 'refused');
   assert.equal(status(lab, (l) => l.act({ kind: 'set-target', target: 'tg-1', enabled: false })), '409 already_in_state');
   lab.act({ kind: 'set-target', target: 'tg-1', enabled: true });
-  assert.equal(lab.probe({ kind: 'gateway-call', principal: 'role-lab-orders-agent', target: 'tg-1' }).outcome, 'allowed');
+  assert.equal(lab.probe({ kind: 'gateway-call', principal: 'role-lab-passenger-chat-agent', target: 'tg-1' }).outcome, 'allowed');
   assert.equal(status(lab, (l) => l.act({ kind: 'set-target', target: 'nope', enabled: true })), '404 unknown_target');
   for (const enabled of ['false', 0, null, undefined]) assert.equal(status(lab, (l) => l.act({ kind: 'set-target', target: 'tg-1', enabled })), '400 bad_value');
 });
@@ -90,7 +90,7 @@ test('close-bypass: reports who is locked out (computed), flips the check, closi
   assert.equal(status(lab, (l) => l.act({ kind: 'close-bypass', runtime: 'rt-2' })), '409 already_in_state');
   const r = lab.act({ kind: 'close-bypass', runtime: 'rt-1' });
   assert.deepEqual(r.lockedOut, ['role-lab-batch-job']);
-  assert.deepEqual(r.stillMediated, ['role-lab-orders-agent']);
+  assert.deepEqual(r.stillMediated, ['role-lab-passenger-chat-agent']);
   assert.equal(green(lab.gw, 'bypass-closed'), true);
   assert.equal(lab.probe({ kind: 'direct-runtime', principal: 'role-lab-batch-job', runtime: 'rt-1' }).outcome, 'denied');
   assert.equal(status(lab, (l) => l.act({ kind: 'close-bypass', runtime: 'rt-1' })), '409 already_in_state');
@@ -100,9 +100,9 @@ test('close-bypass: reports who is locked out (computed), flips the check, closi
 
 test('pin-endpoint: https on a reserved host only; path, port, userinfo, query, http, real hosts and credential-looking text are all refused', () => {
   const lab = fresh();
-  assert.equal(lab.act({ kind: 'pin-endpoint', endpoint: 'https://GW.Northwind.Example' }).pinnedEndpoint, 'https://gw.northwind.example');
+  assert.equal(lab.act({ kind: 'pin-endpoint', endpoint: 'https://GW.AirGuard.Example' }).pinnedEndpoint, 'https://gw.airguard.example');
   assert.equal(green(lab.gw, 'caller-pinning'), true);
-  assert.equal(status(lab, (l) => l.act({ kind: 'pin-endpoint', endpoint: 'https://gw.northwind.example' })), '409 already_in_state');
+  assert.equal(status(lab, (l) => l.act({ kind: 'pin-endpoint', endpoint: 'https://gw.airguard.example' })), '409 already_in_state');
   assert.equal(lab.act({ kind: 'pin-endpoint', endpoint: 'https://other.example.invalid' }).pinnedEndpoint, 'https://other.example.invalid');
   const before = snap(lab);
   for (const e of ['http://gw.example', 'https://gw.example/path', 'https://gw.example:8443', 'https://u:p@gw.example', 'https://gw.example/?q=1', 'https://gw.example/#f', 'https://real-company.com', 'https://gw.example.com',
@@ -149,15 +149,15 @@ test('probes: the gateway-call matrix over principal x target x engine mode, dis
   const lab = fresh();
   const gc = (principal, target) => lab.probe({ kind: 'gateway-call', principal, target });
   for (const [p, t, logOnly, enforce] of [
-    ['role-lab-orders-agent', 'tg-1', 'allowed', 'allowed'], ['role-lab-batch-job', 'tg-1', 'allowed', 'denied'], ['role-lab-unknown', 'tg-1', 'allowed', 'denied'],
-    ['role-lab-batch-job', 'tg-2', 'allowed', 'allowed'], ['role-lab-orders-agent', 'tg-2', 'allowed', 'denied'],
+    ['role-lab-passenger-chat-agent', 'tg-1', 'allowed', 'allowed'], ['role-lab-batch-job', 'tg-1', 'allowed', 'denied'], ['role-lab-unknown', 'tg-1', 'allowed', 'denied'],
+    ['role-lab-batch-job', 'tg-2', 'allowed', 'allowed'], ['role-lab-passenger-chat-agent', 'tg-2', 'allowed', 'denied'],
     ['role-lab-unknown', 'tg-3', 'allowed', 'allowed'], ['role-lab-analyst', 'tg-3', 'allowed', 'allowed'],
   ]) assert.equal(gc(p, t).outcome, logOnly, `log-only ${p} ${t}`);
   assert.match(gc('role-lab-unknown', 'tg-1').policy, /logged only/);
   lab.act({ kind: 'set-enforcement', mode: 'ENFORCE', confirm: lab.gw.name });
   for (const [p, t, , enforce] of [
-    ['role-lab-orders-agent', 'tg-1', 0, 'allowed'], ['role-lab-batch-job', 'tg-1', 0, 'denied'], ['role-lab-unknown', 'tg-1', 0, 'denied'],
-    ['role-lab-batch-job', 'tg-2', 0, 'allowed'], ['role-lab-orders-agent', 'tg-2', 0, 'denied'], ['role-lab-unknown', 'tg-3', 0, 'allowed'],
+    ['role-lab-passenger-chat-agent', 'tg-1', 0, 'allowed'], ['role-lab-batch-job', 'tg-1', 0, 'denied'], ['role-lab-unknown', 'tg-1', 0, 'denied'],
+    ['role-lab-batch-job', 'tg-2', 0, 'allowed'], ['role-lab-passenger-chat-agent', 'tg-2', 0, 'denied'], ['role-lab-unknown', 'tg-3', 0, 'allowed'],
   ]) assert.equal(gc(p, t).outcome, enforce, `enforce ${p} ${t}`);
   assert.equal(gc('role-lab-unknown', 'tg-1').engineMode, 'ENFORCE');
   lab.act({ kind: 'set-target', target: 'tg-3', enabled: false });
@@ -170,13 +170,13 @@ test('probes: the WAF outage drill follows the failure mode and the direct-runti
   assert.equal(lab.probe({ kind: 'direct-runtime', principal: 'role-lab-batch-job', runtime: 'rt-1' }).outcome, 'allowed');
   assert.equal(lab.probe({ kind: 'direct-runtime', principal: 'role-lab-batch-job', runtime: 'rt-2' }).outcome, 'denied');
   assert.equal(lab.probe({ kind: 'direct-runtime', principal: 'role-lab-unknown', runtime: 'rt-1' }).outcome, 'denied');
-  assert.equal(lab.probe({ kind: 'direct-runtime', principal: 'role-lab-orders-agent', runtime: 'rt-1' }).bypassRoute, 'open');
+  assert.equal(lab.probe({ kind: 'direct-runtime', principal: 'role-lab-passenger-chat-agent', runtime: 'rt-1' }).bypassRoute, 'open');
   assert.equal(snap(lab), before);
   lab.act({ kind: 'set-waf', mode: 'fail-closed' });
   assert.equal(lab.probe({ kind: 'waf-outage' }).outcome, 'blocked');
   for (const p of [{ kind: 'gateway-call', target: 'nope', principal: 'role-lab-batch-job' }, { kind: 'gateway-call', target: 'tg-1', principal: 'nobody' }, { kind: 'gateway-call', target: 'tg-1' }, { kind: 'direct-runtime', runtime: 'rt-9', principal: 'role-lab-batch-job' },
     { kind: 'direct-runtime', runtime: 'rt-1', principal: 5 }, { kind: 'waf-outage', extra: 1 }, { kind: 'nope' }, { kind: '__proto__' }, {}, null, []]) assert.ok(status(lab, (l) => l.probe(p)), JSON.stringify(p));
-  assert.deepEqual(principalsOf(lab.gw), ['role-lab-analyst', 'role-lab-batch-job', 'role-lab-orders-agent', 'role-lab-unknown']);
+  assert.deepEqual(principalsOf(lab.gw), ['role-lab-analyst', 'role-lab-batch-job', 'role-lab-passenger-chat-agent', 'role-lab-unknown']);
 });
 
 test('a Reset-style new lab starts from the seed again; two labs never share state', () => {
@@ -189,17 +189,17 @@ test('a Reset-style new lab starts from the seed again; two labs never share sta
 test('the store: one lab per workspace and vertical, reads never create one, a new workspace is refused at the cap (nothing evicted), idle ones expire, reset is per workspace', () => {
   let t = 0;
   const store = createConsoleStore({ max: 2, ttlMs: 1000, now: () => t });
-  store.lab('a', 'retail', DEFAULT_CAST).act({ kind: 'set-waf', mode: 'fail-closed' });
-  store.lab('b', 'retail', DEFAULT_CAST);
+  store.lab('a', 'airlines', DEFAULT_CAST).act({ kind: 'set-waf', mode: 'fail-closed' });
+  store.lab('b', 'airlines', DEFAULT_CAST);
   assert.equal(store.size(), 2);
-  assert.throws(() => store.lab('c', 'retail', DEFAULT_CAST), (e) => e.status === 429 && e.code === 'too_many_workspaces');
-  assert.equal(store.lab('a', 'retail', DEFAULT_CAST).gw.wafFailureMode, 'fail-closed', 'a was not evicted');
+  assert.throws(() => store.lab('c', 'airlines', DEFAULT_CAST), (e) => e.status === 429 && e.code === 'too_many_workspaces');
+  assert.equal(store.lab('a', 'airlines', DEFAULT_CAST).gw.wafFailureMode, 'fail-closed', 'a was not evicted');
   assert.equal(store.lab('a', 'finance', VERTICALS.finance).gw.wafFailureMode, 'fail-open', 'another vertical is another lab');
-  assert.equal(store.peek('zzz', 'retail', DEFAULT_CAST).gw.wafFailureMode, 'fail-open');
+  assert.equal(store.peek('zzz', 'airlines', DEFAULT_CAST).gw.wafFailureMode, 'fail-open');
   assert.equal(store.size(), 2, 'a read created nothing');
-  store.reset('a'); assert.equal(store.peek('a', 'retail', DEFAULT_CAST).gw.wafFailureMode, 'fail-open'); assert.equal(store.size(), 1);
+  store.reset('a'); assert.equal(store.peek('a', 'airlines', DEFAULT_CAST).gw.wafFailureMode, 'fail-open'); assert.equal(store.size(), 1);
   t = 5000; assert.equal(store.size(), 0, 'idle workspaces expire');
-  assert.doesNotThrow(() => store.lab('c', 'retail', DEFAULT_CAST));
+  assert.doesNotThrow(() => store.lab('c', 'airlines', DEFAULT_CAST));
 });
 
 // ---------- HTTP ----------

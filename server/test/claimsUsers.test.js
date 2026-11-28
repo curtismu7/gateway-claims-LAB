@@ -54,11 +54,11 @@ test('the checks run in a fixed order and the first failure stops the run: later
     assert.ok(r.checks.every((c) => typeof c.detail === 'string' && c.detail.length > 3 && Object.hasOwn(CU_TAGS, c.tag)), sc.id);
   }
   // Four faults at once: only the first, in order, is reported.
-  const many = run({ token: { iss: 'https://idp-other.northwind.example', aud: 'x', iat: 1, exp: 99999, sub: 'a' } });
+  const many = run({ token: { iss: 'https://idp-other.airguard.example', aud: 'x', iat: 1, exp: 99999, sub: 'a' } });
   assert.equal(failedStep(many), 'issuer'); assert.deepEqual(many.checks.slice(2).map((c) => c.ok), Array(7).fill(null));
   const noKey = run({ scenario: 'wrong-aud', kid: 'not-published' });
   assert.equal(failedStep(noKey), 'signing_key', 'the signing key is checked before the audience');
-  const lifeFirst = run({ token: { iss: IDENTITY.issuer.replace('{{castHost}}', 'northwind'), aud: 'priv-nhi-northwind-example', iat: 0, exp: 7200, sub: 'x' } });
+  const lifeFirst = run({ token: { iss: IDENTITY.issuer.replace('{{castHost}}', 'airguard'), aud: 'priv-nhi-airguard-example', iat: 0, exp: 7200, sub: 'x' } });
   assert.equal(failedStep(lifeFirst), 'lifetime', 'lifetime is checked before subject and required claims');
 });
 
@@ -76,7 +76,7 @@ test('TRAP required claim typed as the audience instead of the agent id: a right
   const r = run({ scenario: 'required-claim-audience' });
   assert.equal(r.code, 'required_claim'); assert.equal(r.status, 401);
   const act = r.claimChecks.find((c) => c.path === 'act.sub');
-  assert.equal(act.reason, 'mismatch'); assert.equal(act.actual, DEFAULT_CAST.castAgentId); assert.equal(act.expected, 'priv-nhi-northwind-example');
+  assert.equal(act.reason, 'mismatch'); assert.equal(act.actual, DEFAULT_CAST.castAgentId); assert.equal(act.expected, 'priv-nhi-airguard-example');
   assert.deepEqual(r.log, ['mcpgw: workload token rejected: required claim "act.sub" does not match'], 'the same log line as the {} trap');
   assert.deepEqual(r.identityView.filter((v) => v.changed).map((v) => v.id), ['required']);
   // With the rule fixed the very same token is accepted.
@@ -99,7 +99,7 @@ test('TRAP console refusal: pinning Subject to one value while the End-user clai
   assert.match(r.checks[0].detail, /Widen Subject to \*/);
   assert.equal(r.checks.slice(1).every((c) => c.ok === null), true);
   assert.match(r.hops[0].response, /not sent/);
-  const pinned = { subject: 'orders-agent', endUser: { mode: 'opaque', claim: 'sub' } };
+  const pinned = { subject: 'passenger-chat-agent', endUser: { mode: 'opaque', claim: 'sub' } };
   assert.equal(validateIdentitySettings(pinned).code, 'subject_pinned');
   assert.equal(validateIdentitySettings({ ...pinned, subject: '*' }), null, 'widened to *');
   assert.equal(validateIdentitySettings({ ...pinned, subject: 'orders-?gent' }), null, 'a pattern is not one value');
@@ -113,7 +113,7 @@ test('Opaque records the person from a claim and never looks them up; Resolved n
   assert.deepEqual(opaque.endUser, { mode: 'opaque', claim: 'sub', value: 'sam-rivera', resolved: null, directoryGroups: null, cedarGroupRulesApply: false });
   assert.match(opaque.checks.find((c) => c.id === 'end_user').detail, /recorded and never looked up/);
   const resolved = run({ scenario: 'resolved-allowed' });
-  assert.deepEqual(resolved.endUser, { mode: 'resolved', claim: 'sub', value: 'ana-lopez', resolved: true, directoryGroups: ['northwind-team'], cedarGroupRulesApply: true });
+  assert.deepEqual(resolved.endUser, { mode: 'resolved', claim: 'sub', value: 'ana-lopez', resolved: true, directoryGroups: ['airguard-team'], cedarGroupRulesApply: true });
   const missing = run({ scenario: 'resolved-missing' });
   assert.equal(missing.status, 403); assert.equal(missing.code, 'user_not_found'); assert.equal(missing.endUser.resolved, false); assert.equal(missing.endUser.cedarGroupRulesApply, false);
   assert.match(missing.log.at(-1), /is not a Privilege user/);
@@ -197,18 +197,18 @@ test('grant tiers: any one listed value matches a claim, every claim in a rule m
   const evalWith = (claims, tiers = s.tiers) => evaluateClaimsUsers({ claims, kid: 'atm-agent-key', identity: s.identity, directory: s.directory, tiers, tools: s.tools });
   // groups only (reader), roles only (admin), both (union = nine), neither (403).
   const only = (extra, drop) => { const c = { ...base, ...extra }; for (const k of drop) delete c[k]; return c; };
-  assert.equal(evalWith(only({ groups: ['northwind-support'] }, ['realm_access'])).toolCount, 3, 'the second listed value matches (any one)');
+  assert.equal(evalWith(only({ groups: ['airguard-support'] }, ['realm_access'])).toolCount, 3, 'the second listed value matches (any one)');
   assert.equal(evalWith(only({}, ['groups'])).toolCount, 9, 'the admin role alone opens all nine');
   assert.equal(evalWith(base).toolCount, 9, 'both tiers match: the union');
   const none = evalWith(only({ groups: ['x'] }, ['realm_access']));
   assert.equal(none.decision, 'deny'); assert.equal(none.status, 403); assert.deepEqual(none.tools, []); assert.equal(none.toolCount, 0);
   assert.equal(none.tiers.every((t) => !t.ok), true);
   // Every claim of one rule must match.
-  const two = [{ id: 'both', label: 'Both', claims: [{ path: 'groups', anyOf: ['northwind-support'] }, { path: 'realm_access.roles', anyOf: ['wrong-role'] }], tools: ['ListItems'] }];
+  const two = [{ id: 'both', label: 'Both', claims: [{ path: 'groups', anyOf: ['airguard-support'] }, { path: 'realm_access.roles', anyOf: ['wrong-role'] }], tools: ['ListItems'] }];
   assert.equal(evalWith(base, two).code, 'no_tier');
-  assert.equal(evalWith(base, [{ ...two[0], claims: [two[0].claims[0], { path: 'realm_access.roles', anyOf: ['x', 'northwind-admin'] }] }]).toolCount, 1);
+  assert.equal(evalWith(base, [{ ...two[0], claims: [two[0].claims[0], { path: 'realm_access.roles', anyOf: ['x', 'airguard-admin'] }] }]).toolCount, 1);
   // The tool list keeps the lab's order whatever order the tiers list them in.
-  const odd = [{ id: 'o', label: 'O', claims: [{ path: 'groups', anyOf: ['northwind-support'] }], tools: ['PurgeItems', 'ListItems'] }];
+  const odd = [{ id: 'o', label: 'O', claims: [{ path: 'groups', anyOf: ['airguard-support'] }], tools: ['PurgeItems', 'ListItems'] }];
   assert.deepEqual(evalWith(base, odd).tools, ['ListItems', 'PurgeItems']);
   assert.ok(TIERS.every((t) => t.tools.every((n) => TOOLS.includes(n))));
 });
@@ -246,7 +246,7 @@ test('MaxTokenLifetimeSec 0 means the gateway default of 3600', () => {
 
 test('the accepted log line names the key, the issuer and the subject; a refusal at a later step still shows that the token was accepted', () => {
   const ok = run({ scenario: 'opaque-allowed' });
-  assert.deepEqual(ok.log, ['mcpgw: workload token accepted for key orders-agent-key issuer=https://idp.northwind.example subject=sam-rivera', 'tools/list returned 9 tools']);
+  assert.deepEqual(ok.log, ['mcpgw: workload token accepted for key passenger-chat-agent-key issuer=https://idp.airguard.example subject=sam-rivera', 'tools/list returned 9 tools']);
   const none = run({ scenario: 'tier-none' });
   assert.match(none.log[0], /workload token accepted/); assert.match(none.log[1], /No gateway log line is known for a claim mismatch/);
   assert.equal(run({ scenario: 'wrong-iss' }).log.length, 1);
@@ -333,16 +333,17 @@ test('the lab\'s own fixed texts survive both masks unchanged in every vertical 
 // ---- over HTTP ----
 const post = (url, body, ws = 'cu-w', headers = {}) => call(url, 'POST', '/api/claims-users/evaluate', body, { ws, headers });
 
-test('GET /api/claims-users: the story, three verticals, no-store, simulated', async () => {
+test('GET /api/claims-users: the story, four verticals, no-store, simulated', async () => {
   await withServer(async (url) => {
     const r = await call(url, 'GET', '/api/claims-users');
     assert.equal(r.status, 200); assert.equal(r.json.simulated, true); assert.equal(r.headers.get('cache-control'), 'no-store');
     assert.equal(r.json.sections.length, 3); assert.equal(claimsUsersScenarios(r.json).length, 12); assert.equal(r.json.checks.length, 9);
     assert.equal(r.json.banner, CU_BANNER); assert.deepEqual(r.json.tags, CU_TAGS);
-    assert.match(r.json.title, /Northwind Retail/);
+    assert.match(r.json.title, /AirGuard Airlines/);
+    assert.match((await call(url, 'GET', '/api/claims-users?vertical=retail')).json.title, /Northwind Retail/, 'the retail pack still works');
     const fin = await call(url, 'GET', '/api/claims-users?vertical=finance');
     assert.match(fin.json.title, /Fabrikam Bank/); assert.equal(fin.json.identity.requiredClaims[1].equals, 'payments-agent');
-    assert.match((await call(url, 'GET', '/api/claims-users?vertical=nope')).json.title, /Northwind/, 'an unknown vertical keeps the default');
+    assert.match((await call(url, 'GET', '/api/claims-users?vertical=nope')).json.title, /AirGuard Airlines/, 'an unknown vertical keeps the default');
   });
 });
 
@@ -358,10 +359,10 @@ test('POST /api/claims-users/evaluate: every scenario over HTTP, per vertical, w
         assert.ok(r.json.hops.every((h) => h.traceparent.includes(r.json.traceId)));
       }
     }
-    const runs = (await call(url, 'GET', '/api/runs', undefined, { ws: 'cu-retail' })).json.runs;
+    const runs = (await call(url, 'GET', '/api/runs', undefined, { ws: 'cu-airlines' })).json.runs;
     assert.equal(runs.length, 12); assert.ok(runs.every((x) => x.scenario.startsWith('claims-users:')));
-    assert.equal((await call(url, 'POST', '/api/reset', {}, { ws: 'cu-retail' })).status, 200);
-    assert.equal((await call(url, 'GET', '/api/runs', undefined, { ws: 'cu-retail' })).json.runs.length, 0);
+    assert.equal((await call(url, 'POST', '/api/reset', {}, { ws: 'cu-airlines' })).status, 200);
+    assert.equal((await call(url, 'GET', '/api/runs', undefined, { ws: 'cu-airlines' })).json.runs.length, 0);
     const tp = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01';
     assert.equal((await post(url, { scenario: 'wrong-iss' }, 'cu-w', { traceparent: tp })).json.traceId, '0af7651916cd43dd8448eb211c80319c');
   });
@@ -374,9 +375,9 @@ test('POST /api/claims-users/evaluate: overrides, a custom token, bad input and 
     assert.equal(widen.json.decision, 'allow'); assert.equal(widen.json.custom, true); assert.ok(widen.json.identityView.find((v) => v.id === 'subject').changed === false, '* is the default Subject');
     const kid = await post(url, { scenario: 'opaque-allowed', kid: 'atm-central-key' });
     assert.equal(kid.json.code, 'key_not_published'); assert.equal(kid.json.token.header.kid, 'atm-central-key');
-    const custom = await post(url, { token: { ...base, groups: ['northwind-readers'], realm_access: { roles: [] } }, endUserMode: 'opaque' });
+    const custom = await post(url, { token: { ...base, groups: ['airguard-readers'], realm_access: { roles: [] } }, endUserMode: 'opaque' });
     assert.equal(custom.json.scenario, 'custom'); assert.equal(custom.json.expected, null); assert.equal(custom.json.toolCount, 3); assert.equal(custom.json.token, null, 'a typed token is not echoed');
-    assert.ok(custom.json.flat.some((f) => f.path === 'groups.0' && f.value === 'northwind-readers'));
+    assert.ok(custom.json.flat.some((f) => f.path === 'groups.0' && f.value === 'airguard-readers'));
     const refused = [
       [{ scenario: 'nope' }, 400, 'unknown_scenario'], [{}, 400, 'bad_request'], [{ scenario: 'wrong-iss', extra: 1 }, 400, 'unknown_field'], [{ token: [] }, 400, 'bad_token'], [{ token: { a: { b: { c: { d: { e: { f: { g: 1 } } } } } } } }, 400, 'too_deep'],
       [{ token: { 'a.b': 1 } }, 400, 'dotted_claim_name'], [{ scenario: 'wrong-iss', kid: 'a b' }, 400, 'bad_kid'], [{ scenario: 'wrong-iss', endUserMode: 'x' }, 400, 'bad_end_user_mode'], [{ scenario: 'wrong-iss', subject: 'ghp_AbCdEfGhIjKlMnOpQr' }, 400, 'credential_like'],
