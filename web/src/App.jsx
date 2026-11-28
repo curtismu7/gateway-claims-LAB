@@ -17,6 +17,7 @@ import ShelfLink from "./components/ShelfLink";
 import VerifyMark from "./components/VerifyMark";
 import TalkTrack from "./components/TalkTrack";
 import { getJson, postJson, resetWorkspace } from "./api";
+import ModeModal from "./mode-modal/ModeModal.jsx";
 import { CLAIMS_USERS_BANNER, NO_LIVE, RELEASE_BANNER } from "./releaseText";
 
 const THEME_KEY = "gwcl.theme";
@@ -38,11 +39,12 @@ export const TABS = [
   { id: "diagram", label: "Diagram" },
   { id: "talk", label: "Talk track" },
 ];
-// The two H2 2026 release tabs carry their own banner on top of the simulation banner, in presenter mode too.
+// The two H2 2026 release tabs carry their own banner (a claim label, not the simulation notice), in presenter mode too.
 export const RELEASE_TABS = ["obo", "console"];
-// The banner is never blank: until /api/scenarios answers (or if it fails) this fixed text stands in. It names the mode, always mock here.
-const TAIL = "Nothing here calls a real gateway, identity provider or tenant.";
-export const BANNER_UNKNOWN = `SIMULATED, MOCK mode: a mock PingFederate-style token and a mock Privilege rule. ${TAIL}`;
+// The Real-or-mock modal (shared/mode-modal) replaced the simulation banner. This lab is Mock only (there is no Live engine; Live is refused and the page stays in
+// mock), so the mode is fixed and the line is always this one, also before /api/scenarios answers and if it fails. The release tabs keep their own claim banners.
+export const MODE_LINE = "Everything here is simulated: a mock PingFederate-style token and a mock Privilege rule. Nothing here calls a real gateway, identity provider or tenant.";
+const MODE_LINES = { mock: MODE_LINE };
 
 const hashParts = () => {
   const h = window.location.hash.replace("#", "");
@@ -125,7 +127,6 @@ export default function App() {
     setResetMsg(ok ? "Reset: your workspace's evaluations are cleared, the modelled gateway is back as it was, and the diagram boxes are back in place." : "Reset failed on the server; the view was reset.");
   }, []);
 
-  const banner = story ? story.banner : BANNER_UNKNOWN;
   return (
     <div className={`app${presenter ? " app--presenter" : ""}`}>
       <header className="shell-bar">
@@ -157,7 +158,6 @@ export default function App() {
         </TopMenu>
       </header>
       <main className="page">
-        <p className="banner" role="status" data-state="mock" data-testid="banner">{banner}</p>
         {liveMsg && <p className="muted" id="live-refusal" role="status" data-testid="live-refusal">Live is refused. {(info && info.liveRefusal) || NO_LIVE} The page stays in mock mode.</p>}
         {error && <p className="app-error" role="alert">Could not load the lab ({error}). Is the server running?</p>}
         <p className="sr-only" role="status" aria-live="polite">{resetMsg}</p>
@@ -191,6 +191,7 @@ export default function App() {
 
       <TalkTrackDialog isOpen={talkOpen} onClose={() => setTalkOpen(false)} talk={story?.talkTrack ?? []} />
       <HelpDialog isOpen={helpOpen} onClose={() => setHelpOpen(false)} sections={HELP_SECTIONS} docsUrl="https://github.com/curtismu7/gateway-claims-LAB#readme" />
+      <ModeModal mode="mock" lines={MODE_LINES} storageKey="gclab-mode" />
     </div>
   );
 }

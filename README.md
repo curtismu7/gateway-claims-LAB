@@ -25,7 +25,7 @@ What it shows (tabs):
 6. **AgentCore console** (deck slide 45). One modelled gateway you change: disable a tool target, switch the WAF fail-open or fail-closed, close a bypass route, pin an endpoint, end a session, flip log-only to enforcing by typing the gateway name; a twelve-check scorecard computed from the state; read-only probes; six recorded walkthroughs.
 7. **AgentCore posture** (shape only, field values invented).
 8. **Diagram** (ReactFlow, drawn from diagram-studio/1 data loaded by name: nested-claim gate, v1.261027 scope gates, on-behalf-of; movable boxes, Simulate, speed, Reset restores box positions).
-9. **Talk track** (generated from data, also in `docs/talk-track.md`), with a "Why it matters (Ping claims)" entry per release tab. Presenter mode (`P`, `Esc` leaves; Cmd/Ctrl/Alt+P is ignored) keeps the simulation banner.
+9. **Talk track** (generated from data, also in `docs/talk-track.md`), with a "Why it matters (Ping claims)" entry per release tab. Presenter mode (`P`, `Esc` leaves; Cmd/Ctrl/Alt+P is ignored) keeps the tab's own claim banners; the Mock modal shows when the page opens.
 
 Three vertical packs (retail, health, finance) change every name. Every row on the release tabs carries one tag: deck claim, console swagger name (schema only), lab reading, lab-invented, or measured (our note).
 
@@ -92,7 +92,7 @@ Other variables: `VITE_PORT` (Vite dev server, default 5151, `npm run dev -w web
 
 ## Mock and live modes
 
-The header has a **Mock / Live** toggle on every page, and the banner and the mode chip show the same mode (mock). Pressing Live changes nothing: it shows why Live is refused (this app has no Live engine) and the page stays in mock. "Your gateway" on the AgentCore console tab is the lab's in-memory model for your workspace, never a call to anything.
+The header has a **Mock / Live** toggle on every page, and the Mock modal the page opens with and the mode chip show the same mode (mock). Pressing Live changes nothing: it shows why Live is refused (this app has no Live engine) and the page stays in mock. "Your gateway" on the AgentCore console tab is the lab's in-memory model for your workspace, never a call to anything.
 
 ## Health, doctor and reset
 
