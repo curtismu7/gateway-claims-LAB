@@ -77,7 +77,7 @@ function CustomEditor({ scenario, rule, onResult, resetSignal }) {
   );
 }
 
-export default function ClaimGate({ story, resetSignal, requestedId, onSelect, source = "mock" }) {
+export default function ClaimGate({ story, resetSignal, requestedId, onSelect, source = "mock", onRun = null }) {
   const known = (v) => story.scenarios.some((s) => s.id === v);
   const [id, setId] = useState(known(requestedId) ? requestedId : story.scenarios[0].id);
   // A link such as /#scenario-act-text selects that scenario; an unknown id keeps the current one.
@@ -88,9 +88,9 @@ export default function ClaimGate({ story, resetSignal, requestedId, onSelect, s
   const run = useCallback(async (sid) => {
     setFail(null);
     const res = await evaluate({ scenario: sid }).catch(() => ({ ok: false, status: 0, body: {} }));
-    if (res.ok) setResult(res.body); else { setResult(null); setFail(`Could not evaluate (${res.body.error || res.status}).`); }
-  }, []);
-  useEffect(() => { setResult(null); }, [resetSignal]);
+    if (res.ok) { setResult(res.body); onRun?.(res.body); } else { setResult(null); onRun?.(null); setFail(`Could not evaluate (${res.body.error || res.status}).`); }
+  }, [onRun]);
+  useEffect(() => { setResult(null); onRun?.(null); }, [resetSignal]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { run(id); }, [id, story.cast.castAgentId, run, resetSignal]);
   return (
     <div className="gate">
@@ -126,7 +126,7 @@ export default function ClaimGate({ story, resetSignal, requestedId, onSelect, s
           {story.facts.map((f) => <li key={f.id}><span className={STATUS_CLASS[f.status] || "tag"}>{f.status}</span> {f.text} <span className="muted">Source: {f.source}.</span></li>)}
         </ul>
       </section>
-      <CustomEditor scenario={scenario} rule={story.rule} onResult={setResult} resetSignal={resetSignal} />
+      <CustomEditor scenario={scenario} rule={story.rule} onResult={(r) => { setResult(r); onRun?.(r); }} resetSignal={resetSignal} />
     </div>
   );
 }
