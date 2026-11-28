@@ -12,7 +12,7 @@ const SCEN = [
   { id: "act-text", title: 'Denied: act emitted as the text "{}"', expected: "deny", lesson: "The trap.", token: TOKEN({ client_id: "a", act: "{}" }) },
 ];
 const STORY = {
-  title: "t", intro: "intro text", banner: "SIMULATED, MOCK mode: a mock token", tokenLabel: "MOCK-ISSUED teaching token", verticals: ["retail", "health"],
+  title: "t", intro: "intro text", banner: "SIMULATED, MOCK mode: a mock token", tokenLabel: "MOCK-ISSUED teaching token", verticals: ["airlines", "retail", "health"],
   rule: { name: "Registered agent only (mock)", appliesTo: "P1 Privilege Agent App", note: "n", requiredClaims: [{ path: "client_id", equals: "a" }, { path: "act.sub", equals: "a" }] },
   scenarios: SCEN, cast: { castAgentId: "a" },
   facts: [{ id: "nested-match-new", status: "UNVERIFIED", text: "Nested matching is new.", source: "inference" }, { id: "x", status: "measured", text: "Seen.", source: "recipe" }],
@@ -378,7 +378,7 @@ describe("diagram tab", () => {
     await ready();
     await userEvent.click(screen.getByRole("link", { name: "Diagram" }));
     expect(await screen.findByText("P1 Privilege Agent App")).toBeInTheDocument();
-    expect(calls.some((c) => c.url.startsWith("/api/diagram?vertical=retail"))).toBe(true);
+    expect(calls.some((c) => c.url.startsWith("/api/diagram?vertical=airlines"))).toBe(true);
     expect(screen.getByTestId("banner")).toBeInTheDocument();
     expect(screen.getByLabelText(/Step time/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /simulate/i }));
@@ -682,7 +682,7 @@ describe("on-behalf-of tab", () => {
     expect(screen.getByTestId("obo-backend")).toHaveTextContent(/Exchanged token\s*accepted/);
     expect(screen.getByTestId("obo-backend")).toHaveTextContent(/Caller's own token\s*refused/);
     expect(screen.getByTestId("obo-hops")).toHaveTextContent(/POST https:\/\/gateway\.example\/mcp/);
-    expect(calls.filter((c) => c.url === "/api/obo/evaluate").every((c) => c.opts.headers["x-workspace"] && JSON.parse(c.opts.body).vertical === "retail")).toBe(true);
+    expect(calls.filter((c) => c.url === "/api/obo/evaluate").every((c) => c.opts.headers["x-workspace"] && JSON.parse(c.opts.body).vertical === "airlines")).toBe(true);
   });
   it("a refused scenario says which check refused and which were not reached, and no token is minted", async () => {
     await openObo();
@@ -774,7 +774,7 @@ describe("AgentCore console tab", () => {
     await userEvent.click(screen.getByRole("button", { name: "Disable orders-tool" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Enable orders-tool" })).toBeEnabled());
     const c = calls.filter((x) => x.url === "/api/agentcore-console/act").map((x) => JSON.parse(x.opts.body));
-    expect(c[0]).toMatchObject({ kind: "set-target", target: "tg-1", enabled: false, vertical: "retail" });
+    expect(c[0]).toMatchObject({ kind: "set-target", target: "tg-1", enabled: false, vertical: "airlines" });
     expect(screen.getByTestId("gc-audit")).toHaveTextContent("set-target");
     expect(calls.filter((x) => x.url === "/api/agentcore-console/act").every((x) => x.opts.headers["x-workspace"])).toBe(true);
   });
@@ -830,7 +830,7 @@ describe("AgentCore console tab", () => {
     await userEvent.click(screen.getByRole("button", { name: "WAF outage drill" }));
     await waitFor(() => expect(screen.getByTestId("gc-probe-result")).toHaveTextContent("PASSED UNSCREENED"));
     expect(calls.some((x) => x.url === "/api/agentcore-console/act")).toBe(false);
-    expect(calls.filter((x) => x.url === "/api/agentcore-console/probe").every((x) => JSON.parse(x.opts.body).vertical === "retail")).toBe(true);
+    expect(calls.filter((x) => x.url === "/api/agentcore-console/probe").every((x) => JSON.parse(x.opts.body).vertical === "airlines")).toBe(true);
   });
   it("a server failure on a change shows the error and leaves the page as it was", async () => {
     await openGc();
@@ -887,7 +887,7 @@ describe("users and groups from claims tab", () => {
     expect(screen.getByTestId("cu-log")).toHaveTextContent("workload token rejected");
     expect(screen.getByTestId("hops")).toBeInTheDocument();
     const ev = calls.filter((c) => c.url === "/api/claims-users/evaluate");
-    expect(JSON.parse(ev[0].opts.body)).toEqual({ scenario: "wrong-iss", vertical: "retail" });
+    expect(JSON.parse(ev[0].opts.body)).toEqual({ scenario: "wrong-iss", vertical: "airlines" });
     expect(ev[0].opts.headers["x-workspace"]).toMatch(/^[a-z0-9-]{1,40}$/);
   });
   it("another scenario runs and shows the tiers, the granted tools and the end user; a refused end-user step shows the person looked up and not found", async () => {
@@ -915,7 +915,7 @@ describe("users and groups from claims tab", () => {
     await userEvent.selectOptions(screen.getByLabelText("End-user setting for this run"), "resolved");
     await waitFor(() => expect(screen.getByTestId("cu-verdict")).toHaveTextContent("DENY"));
     const last = JSON.parse(calls.filter((c) => c.url === "/api/claims-users/evaluate").at(-1).opts.body);
-    expect(last).toEqual({ scenario: "opaque-allowed", vertical: "retail", endUserMode: "resolved" });
+    expect(last).toEqual({ scenario: "opaque-allowed", vertical: "airlines", endUserMode: "resolved" });
     await userEvent.click(screen.getByTestId("reset"));
     await waitFor(() => expect(screen.getByTestId("cu-verdict")).toHaveTextContent("ALLOW"));
     expect(screen.getByLabelText("End-user setting for this run")).toHaveValue("");
@@ -952,7 +952,7 @@ describe("users and groups from claims tab", () => {
     await userEvent.click(screen.getByRole("button", { name: "Evaluate custom" }));
     await screen.findByTestId("cu-typed-note");
     const sent = JSON.parse(calls.filter((c) => c.url === "/api/claims-users/evaluate").at(-1).opts.body);
-    expect(sent).toMatchObject({ vertical: "retail", kid: "atm-agent-key", subject: "sam-*", endUserClaim: "sub", endUserMode: "resolved" });
+    expect(sent).toMatchObject({ vertical: "airlines", kid: "atm-agent-key", subject: "sam-*", endUserClaim: "sub", endUserMode: "resolved" });
     expect(sent.token.sub).toBe("sam-rivera"); expect(sent.scenario).toBeUndefined();
     expect(within(screen.getByTestId("flat-table")).getByText("groups.0")).toBeInTheDocument();
     expect(screen.getByTestId("cu-identity")).toHaveTextContent("changed in this run");

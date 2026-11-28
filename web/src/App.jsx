@@ -52,7 +52,7 @@ const hashParts = () => {
 };
 
 export default function App() {
-  const [vertical, setVertical] = useState("retail");
+  const [vertical, setVertical] = useState("airlines");
   const [story, setStory] = useState(null);
   const [scopeStory, setScopeStory] = useState(null);
   const [agStory, setAgStory] = useState(null);
@@ -143,7 +143,7 @@ export default function App() {
         <TopMenu
           postman={{ repo: "curtismu7/gateway-claims-LAB", slug: "gateway-claims-lab" }}
           mode={{ value: source === "real" ? "real" : "mock", onChange: (v) => switchMode(v === "real" ? "live" : "mock"), realAvailable, realHint: realReason }}
-          vertical={{ value: vertical, onChange: setVertical, options: story ? story.verticals : ["retail"] }}
+          vertical={{ value: vertical, onChange: setVertical, options: story ? story.verticals : ["airlines"] }}
           theme={{ value: theme, onChange: pickTheme }}
           fontSize={{ value: fontStep, onChange: setFontStep }}
           present={{ active: presenter, onToggle: () => setPresenter((v) => !v) }}

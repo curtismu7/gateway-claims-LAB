@@ -8,7 +8,7 @@ Everything here is simulated. The token, the rule and the posture data are inven
 
 ## Nested-claim gate
 
-The agent gets a token from PingFederate. In the token, act is an object: {"sub": "orders-agent"}. The P1 Privilege Agent App has a rule with two required claims, client_id and act.sub, both equal to the registered agent. Walk the five scenarios: allowed, wrong act.sub, no act, act as the text "{}", wrong client_id.
+The agent gets a token from PingFederate. In the token, act is an object: {"sub": "passenger-chat-agent"}. The P1 Privilege Agent App has a rule with two required claims, client_id and act.sub, both equal to the registered agent. Walk the five scenarios: allowed, wrong act.sub, no act, act as the text "{}", wrong client_id.
 
 ## The "{}" trap
 

@@ -27,7 +27,7 @@ What it shows (tabs):
 8. **Diagram** (ReactFlow, drawn from diagram-studio/1 data loaded by name: nested-claim gate, v1.261027 scope gates, on-behalf-of; movable boxes, Simulate, speed, Reset restores box positions).
 9. **Talk track** (generated from data, also in `docs/talk-track.md`), with a "Why it matters (Ping claims)" entry per release tab. Presenter mode (`P`, `Esc` leaves; Cmd/Ctrl/Alt+P is ignored) keeps the simulation banner.
 
-Three vertical packs (retail, health, finance) change every name. Every row on the release tabs carries one tag: deck claim, console swagger name (schema only), lab reading, lab-invented, or measured (our note).
+Four vertical packs (airlines, retail, health, finance) change every name; the default story is AirGuard Airlines, a fictional airline (airlines pack). Every row on the release tabs carries one tag: deck claim, console swagger name (schema only), lab reading, lab-invented, or measured (our note).
 
 ### Sources and status of claims
 
@@ -107,7 +107,7 @@ Other commands: `npm run talk-track`, `npm run mock-table`, `npm run content-pac
 
 | Endpoint | |
 | --- | --- |
-| `GET /api/scenarios?vertical=retail\|health\|finance` | banner, mock token for each scenario, the rule, labelled facts |
+| `GET /api/scenarios?vertical=airlines\|retail\|health\|finance` | banner, mock token for each scenario, the rule, labelled facts |
 | `POST /api/evaluate` | `{"scenario": "<id>"}` or a custom `{"token": {...}, "rule": {"requiredClaims": [{"path": "act.sub", "equals": "..."}]}}`; bounded input, 400 with a code on bad input; also returns `hops`, `traceId` and `trace` (the "What Privilege did" record the page draws under the result: one `checked` decision per required claim, all simulated) |
 | `GET /api/scope-gate`, `POST /api/scope-gate/evaluate` | the v1.261027 scenarios, with an optional scope text of your own |
 | `GET /api/agentcore`, `POST /api/agentcore/evaluate` | the v1.261028 tables and checks |

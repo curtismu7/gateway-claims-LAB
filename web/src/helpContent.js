@@ -18,7 +18,7 @@ export const HELP_SECTIONS = [
     heading: "How to use the page",
     body: [
       "Tabs: Nested-claim gate (pick a scenario, or edit your own mock token and rule — bounded input; the raw decoded token, the rule and a flattened dotted-path view are shown), Users and groups from claims (twelve scenarios in three steps: identity gate, end user, claim-conditioned grant tiers, with a register-vs-claims comparison panel), v1.261027 scope gates, v1.261028 AgentCore, v1.261029 + v1.261030 (text only: registry facts, nine binary readings, the not-yet-measured list), On-behalf-of (13 exchange scenarios, editable backend and scope), AgentCore console (one modelled gateway you change: disable a target, WAF fail-open or fail-closed, close a bypass route, pin an endpoint, end a session, flip log-only to enforcing by typing the gateway name; a twelve-check scorecard), AgentCore posture, Diagram, Talk track.",
-      "Diagram boxes can be dragged; Reset in the header restores them and clears this workspace's evaluations. Presenter is the P key (Esc leaves); the simulation banner stays. Vertical packs (retail, health, finance) change every name."
+      "Diagram boxes can be dragged; Reset in the header restores them and clears this workspace's evaluations. Presenter is the P key (Esc leaves); the simulation banner stays. Vertical packs (airlines, retail, health, finance) change every name; the default is AirGuard Airlines."
     ]
   },
   {

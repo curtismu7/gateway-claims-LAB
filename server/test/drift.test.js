@@ -49,7 +49,7 @@ test('each new talk-track entry says it is a Ping release claim, UNVERIFIED on o
 test('MOCK/LIVE PARITY: replaying every walkthrough through the HTTP API gives exactly the steps and the final state the Mock table holds', async () => {
   await withServer(async (url) => {
     let n = 0;
-    for (const vertical of ['retail', 'health', 'finance']) {
+    for (const vertical of ['airlines', 'retail', 'health', 'finance']) {
       for (const wt of MOCK_TABLE.verticals[vertical].walkthroughs) {
         const ws = `parity-${n++}`;
         for (const step of wt.steps) {

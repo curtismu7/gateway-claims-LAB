@@ -7,7 +7,7 @@
 // measured: it is tagged UNVERIFIED wherever the mechanics (which claim names, groups by claim path on the grant) go beyond those notes.
 // Tags: measured | reading | invented | swagger | deck | unverified (the five of releaseClaims.js plus the UNVERIFIED chip).
 
-export const CU_TITLE = 'Users and groups from claims: {{castBrand}}\'s agent needs nobody registered';
+export const CU_TITLE = 'Users and groups from claims: the {{castBrand}} agent needs nobody registered';
 export const CU_INTRO = 'A caller\'s token can say who the person is and what they may do. Privilege can read both from claims, so for such callers there may be nobody to register in PingOne. Run twelve mock tokens through three steps, in order: the identity gate, the end-user setting and the claim-conditioned grant tiers. Each answer says which check passed or failed and why.';
 export const CU_BANNER = 'SIMULATION, mock only: the tokens, the identity, the directory and the tiers on this tab are invented by this lab, and nothing calls Privilege, an identity provider or a tenant. That Privilege can take the user and the groups from ANY claim is the owner\'s statement of 2026-11-15, not measured: UNVERIFIED.';
 export const CU_SIBLING = 'Its sibling lab teaches the opposite route: registering people in PingOne.';
