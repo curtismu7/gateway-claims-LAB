@@ -4,7 +4,7 @@
 // Field names are the console swagger's (modelAgentCoreAccountMetadata, 2026-10-31, schema only). Every value, rule and inner shape here is lab-invented
 // or a lab reading. ARNs, accounts and hosts are fake (.example, account 000000000000).
 
-export const CONSOLE_TITLE = 'AgentCore gateway governance: {{castBrand}}\'s gateway as an object of policy';
+export const CONSOLE_TITLE = 'AgentCore gateway governance: the {{castBrand}} gateway as an object of policy';
 export const CONSOLE_INTRO = 'On Bedrock AgentCore the deck says the gateway itself can be governed, not only routed through. This is a model of one gateway you can change: disable a tool target, switch the WAF failure mode, close a bypass route, pin an endpoint, end a session, and flip the policy engine from log-only to enforcing (you type the gateway name to confirm). The scorecard is computed from the state after every change; the probes show what each switch does to a call.';
 
 export const WAF_MODES = ['fail-open', 'fail-closed'];

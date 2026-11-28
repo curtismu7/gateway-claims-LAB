@@ -12,7 +12,7 @@ import { CU_TALK } from './claimsUsersData.js';
 
 export const BANNER = 'SIMULATED, MOCK mode: a mock PingFederate-style token and a mock Privilege rule. Nothing here calls a real gateway, identity provider or tenant.';
 
-export const TITLE = 'Gateway claim gate: nested claims on {{castBrand}}\'s agent token';
+export const TITLE = 'Gateway claim gate: nested claims on the {{castBrand}} agent token';
 export const INTRO = 'A PingFederate-style token carries the agent as an object, act.sub. The P1 Privilege Agent App rule requires client_id and act.sub to equal the registered agent. Run five tokens against the rule and see exactly which claim decided.';
 
 // status: measured = seen in the verified recipe; inferred = our reading; UNVERIFIED = not confirmed by any Ping source.

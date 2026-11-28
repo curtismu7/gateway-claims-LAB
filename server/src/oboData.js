@@ -3,7 +3,7 @@
 // (see cast.js). Every host ends in .example; every token is MOCK-ISSUED here, for education. Values are invented; the config field NAMES are the console
 // swagger's (modelMcpOBOSpec, 2026-10-31, schema only).
 
-export const OBO_TITLE = 'On-behalf-of: {{castBrand}}\'s gateway swaps the caller token for one minted for the backend (RFC 8693)';
+export const OBO_TITLE = 'On-behalf-of: the {{castBrand}} gateway swaps the caller token for one minted for the backend (RFC 8693)';
 export const OBO_INTRO = 'The agent calls the gateway with a verified token. The gateway exchanges it at the issuer for a token whose audience is the backend MCP server, and forwards that one. The backend validates a token issued to it, and act names who the caller was. Run the scenarios, then change the backend or the requested scope and watch which check decides.';
 
 // The lab clock. Every token in this tab is read against it, so a run never depends on the real time.
